@@ -825,29 +825,27 @@ class VerboseReporter(object):
                 self.verbose_mod *= 10
 
 
-class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble,
-                                              _LearntSelectorMixin)):
+class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble, _LearntSelectorMixin)):
     """Abstract base class for Gradient Boosting.
     3 main parameters were added in order to handle constraints cases - eta, gamma and constraint_df
     """
 
     @abstractmethod
-    def __init__(self, loss, learning_rate, n_estimators, min_samples_split,
+    def __init__(self, constraint_obj,
                  min_samples_leaf, min_weight_fraction_leaf,
-                 max_depth, init, subsample, max_features,
+                 init, subsample, max_features,
                  random_state, alpha=0.9, verbose=0, max_leaf_nodes=None,
-                 warm_start=False, presort='auto',
-                 constraints_eta = 0.1, constraints_gamma = 1, constraints_df = None):
+                 warm_start=False, presort='auto'):
 
-        self.n_estimators = n_estimators
-        self.learning_rate = learning_rate
-        self.loss = loss
-        self.min_samples_split = min_samples_split
+        self.n_estimators = constraint_obj.n_estimators
+        self.learning_rate = constraint_obj.learning_rate
+        self.loss = constraint_obj.loss
+        self.min_samples_split = constraint_obj.min_samples_split
         self.min_samples_leaf = min_samples_leaf
         self.min_weight_fraction_leaf = min_weight_fraction_leaf
         self.subsample = subsample
         self.max_features = max_features
-        self.max_depth = max_depth
+        self.max_depth = constraint_obj.max_depth
         self.init = init
         self.random_state = random_state
         self.alpha = alpha
@@ -856,8 +854,9 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble,
         self.warm_start = warm_start
         self.presort = presort
 
-        self.constraints_df = constraints_df
-        self.constraints_gamma = constraints_gamma
+        self.constraints_df = constraint_obj.constraints_df_train
+        self.constraints_gamma = constraint_obj.constraint_gamma
+        self.constraints_eta = constraint_obj.constraint_eta
         self.constraints_weights = None
         self.estimators_ = np.empty((0, 0), dtype=np.object)
         #this list will hold ALL the models which will be built along the process - it is actually a list of lists
@@ -1943,29 +1942,26 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
 
     _SUPPORTED_LOSS = ('ls', 'lad', 'huber', 'quantile', 'constraints')
 
-    def __init__(self, loss='ls', learning_rate=0.1, n_estimators=100,
-                 subsample=1.0, min_samples_split=2,
-                 min_samples_leaf=1, min_weight_fraction_leaf=0.,
-                 max_depth=3, init=None, random_state=None,
-                 max_features=None, alpha=0.9, verbose=0, max_leaf_nodes=None,
-                 warm_start=False,
-                 constraints_eta=0.01, constraints_gamma = 1, constraints_df = None,
+    def __init__(self, constraint_obj, subsample=1.0, min_samples_leaf=1, min_weight_fraction_leaf=0., init=None,
+                 random_state=None, max_features=None, alpha=0.9, verbose=0, max_leaf_nodes=None, warm_start=False,
                  SVR_in_leaves=False, SVR_parmas = {'kernel': 'rbf', 'C': 1.0, 'epsilon': 0.1, 'degree':4}):
 
         super(GradientBoostingRegressor, self).__init__(
-            loss=loss, learning_rate=learning_rate, n_estimators=n_estimators,
-            min_samples_split=min_samples_split,
+            constraint_obj=constraint_obj,
+            loss=constraint_obj.loss, learning_rate=constraint_obj.learning_rate,
+            n_estimators=constraint_obj.n_estimators,
+            min_samples_split=constraint_obj.min_samples_split,
             min_samples_leaf=min_samples_leaf,
             min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_depth=max_depth, init=init, subsample=subsample,
+            max_depth=constraint_obj.max_depth, init=init, subsample=subsample,
             max_features=max_features,
             random_state=random_state, alpha=alpha, verbose=verbose,
             max_leaf_nodes=max_leaf_nodes, warm_start=warm_start)
         #print("We are in the gradient_boositng constructor")
-		
-        self.constraints_eta = constraints_eta
-        self.constraints_gamma = constraints_gamma
-        self.constraints_df=constraints_df
+
+        self.constraints_eta = constraint_obj.constraint_eta
+        self.constraints_gamma = constraint_obj.constraint_gamma
+        self.constraints_df = constraint_obj.constraints_df_train
         self.SVR_parmas = SVR_parmas
         self.SVR_in_leaves = SVR_in_leaves
         self.leafs_models = []
@@ -1984,10 +1980,10 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
             The predicted values.
         """
 
-        #case we are in a mode using SVR in the leaves - we'll use the function we created for prediction
-        if(self.SVR_in_leaves):
+        # case we are in a mode using SVR in the leaves - we'll use the function we created for prediction
+        if self.SVR_in_leaves:
             return self.my_decision_function(X).ravel()
-        #case we are in a regular mode using averages in the leaves
+        # case we are in a regular mode using averages in the leaves
         else:
             return self.decision_function(X).ravel()
 

@@ -10,6 +10,7 @@ from datetime import datetime
 import support_functions as sf
 import csv
 import copy
+from constraint_regressor import ConstraintRegressor
 
 general_path = "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis"
 ###############################################################################
@@ -20,20 +21,21 @@ config_df = pd.read_csv(general_path + "\\python_code\\python_config.csv")
 for j in range(config_df.shape[0]):
     cur_config = config_df.loc[j]
     print "Current configurations are as follow: \n" + str(cur_config)
-    constraints_generator_params = {'seed': cur_config['constraint_seed'],
-                                    'random_params': {'down_prob_constraint': cur_config['down_prob_constraint'],
-                                                      'up_prob_constraint': cur_config['up_prob_constraint'],
-                                                      'down_mean_constraint': cur_config['down_mean_constraint'],
-                                                      'up_mean_constraint': cur_config['up_mean_constraint']},
-                                    'cv_params': {'percentile_threshold': cur_config['percentile_threshold'],
-                                                  'constraint_interval_size': cur_config['constraint_interval_size']}
-                                    }
+    constraint_reg_obj = ConstraintRegressor(cv_params={'percentile_threshold': cur_config['percentile_threshold'],
+                                                        'constraint_interval_size': cur_config['constraint_interval_size']},
+                                             gbt_params={'n_estimators': cur_config['n_estimators'],
+                                                         'max_depth': cur_config['max_depth'],
+                                                         'min_samples_split': cur_config['min_samples_split'],
+                                                         'learning_rate': cur_config['learning_rate'],
+                                                         'loss': cur_config['loss']},
+                                             constraints_params={'eta': cur_config['constraints_eta'],
+                                                                 'gamma': cur_config['constraints_gamma']},
+                                             dataset=cur_config['dataset'], test_percent=cur_config['test_percent'],
+                                             seed=cur_config['gbt_seed'])
+
     # loop over same configuration few time (in order to see that our results are stable and not only luck)
     for i in range(1):
-        data = sf.load_dataset(dataset_name=cur_config['dataset'],
-                               random_constraints=False,
-                               test_percent=cur_config['test_percent'],
-                               constraints_generator_params=constraints_generator_params)
+        data = constraint_reg_obj.load_dataset(data_path=general_path + "\\data_sets")
         X_train = data["X_train"]
         y_train = data["y_train"]
         constraints_df_train = data["constraints_df_train"]
@@ -41,26 +43,27 @@ for j in range(config_df.shape[0]):
         y_test = data["y_test"]
         constraints_df_test = data["constraints_df_test"]
 
-        params = {'n_estimators': cur_config['n_estimators'], 'max_depth': cur_config['max_depth'],
-                  'min_samples_split': cur_config['min_samples_split'], 'learning_rate': cur_config['learning_rate'],
-                  'loss': cur_config['loss'], 'constraints_eta': cur_config['constraints_eta'],
-                  'constraints_gamma': cur_config['constraints_gamma'], 'constraints_df': constraints_df_train,
-                  'random_state': cur_config['gbt_seed']}
-                  # 'SVR_in_leaves': False, 'SVR_parmas': {'kernel': 'sigmoid', 'C': 0.001, 'epsilon': 0.2 , 'degree':3}}
-
+        '''
+        params = {'n_estimators': constraint_reg_obj.n_estimators, 'max_depth': constraint_reg_obj.max_depth,
+                  'min_samples_split': constraint_reg_obj.min_samples_split,
+                  'learning_rate': constraint_reg_obj.learning_rate, 'loss': constraint_reg_obj.loss,
+                  'constraints_eta': constraint_reg_obj.constraint_eta,
+                  'constraints_gamma': constraint_reg_obj.constraint_gamma,
+                  'constraints_df': constraints_df_train, 'random_state': constraint_reg_obj.seed}
+        '''
         config_details = [str(datetime.now()),
                           cur_config['index'],
-                          cur_config['dataset'],
-                          constraints_generator_params['cv_params']['percentile_threshold'],
-                          constraints_generator_params['cv_params']['constraint_interval_size'],
-                          params['n_estimators'],
-                          params['max_depth'],
-                          params['min_samples_split'],
-                          params['learning_rate'],
-                          params['loss'],
-                          params['constraints_eta'],
-                          params['random_state'],
-                          params['constraints_gamma']]
+                          constraint_reg_obj.dataset,
+                          constraint_reg_obj.percentile_threshold,
+                          constraint_reg_obj.constraint_interval_size,
+                          constraint_reg_obj.n_estimators,
+                          constraint_reg_obj.max_depth,
+                          constraint_reg_obj.min_samples_split,
+                          constraint_reg_obj.learning_rate,
+                          constraint_reg_obj.loss,
+                          constraint_reg_obj.constraint_eta,
+                          constraint_reg_obj.seed,
+                          constraint_reg_obj.constraint_gamma]
 
         # defining the output file we'll write to (logs and results)
         writer = csv.writer(open(general_path + "\\Results\\python_auto_results.csv", "a"),
@@ -70,7 +73,7 @@ for j in range(config_df.shape[0]):
         # Option A - not taking into consideration the restrictions at all
 
         start_time = datetime.now()
-        clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(**params)
+        clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
         clf.fit(X_train, y_train, weights_based_constraints_sol=False)
         duration = (datetime.now() - start_time).seconds
         print "Option A - not taking constraints into consideration at all:"
