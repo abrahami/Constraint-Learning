@@ -1948,12 +1948,9 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
 
         super(GradientBoostingRegressor, self).__init__(
             constraint_obj=constraint_obj,
-            loss=constraint_obj.loss, learning_rate=constraint_obj.learning_rate,
-            n_estimators=constraint_obj.n_estimators,
-            min_samples_split=constraint_obj.min_samples_split,
             min_samples_leaf=min_samples_leaf,
             min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_depth=constraint_obj.max_depth, init=init, subsample=subsample,
+            init=init, subsample=subsample,
             max_features=max_features,
             random_state=random_state, alpha=alpha, verbose=verbose,
             max_leaf_nodes=max_leaf_nodes, warm_start=warm_start)

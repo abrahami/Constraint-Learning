@@ -18,20 +18,19 @@ class ConstraintRegressor(object):
                  gbt_params={'n_estimators': 100, 'max_depth': 5, 'min_samples_split': 1,
                              'learning_rate': 0.01, 'loss': 'ls'},
                  constraints_params={'eta': 0.1, 'gamma': 1},
-                 dataset="boston",
-                 test_percent=0.3, seed=123):
-        self.percentile_threshold = cv_params['percentile_threshold'],
-        self.constraint_interval_size = cv_params['constraint_interval_size'],
+                 dataset="boston", test_percent=0.3, seed=123):
+        self.percentile_threshold = cv_params['percentile_threshold']
+        self.constraint_interval_size = cv_params['constraint_interval_size']
         self.dataset = dataset
-        self.test_percent = test_percent,
-        self.seed = seed,
-        self.n_estimators = gbt_params['n_estimators'],
-        self.max_depth = gbt_params['max_depth'],
-        self.min_samples_split = gbt_params['min_samples_split'],
-        self.learning_rate = gbt_params['learning_rate'],
-        self.loss = gbt_params['loss'],
-        self.constraint_eta = constraints_params['eta'],
-        self.constraint_gamma = constraints_params['gamma'],
+        self.test_percent = test_percent
+        self.seed = seed
+        self.n_estimators = gbt_params['n_estimators']
+        self.max_depth = gbt_params['max_depth']
+        self.min_samples_split = gbt_params['min_samples_split']
+        self.learning_rate = gbt_params['learning_rate']
+        self.loss = gbt_params['loss']
+        self.constraint_eta = constraints_params['eta']
+        self.constraint_gamma = constraints_params['gamma']
         self.constraints_df_train = None
         self.constraints_df_test = None
 
