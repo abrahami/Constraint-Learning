@@ -69,6 +69,7 @@ from ..utils.multiclass import check_classification_targets
 #This import is due to the fact that we might want to build SVR models in the leaves
 from sklearn.svm import SVR
 
+
 class QuantileEstimator(BaseEstimator):
     """An estimator predicting the alpha-quantile of the training targets."""
     def __init__(self, alpha=0.9):
@@ -273,6 +274,7 @@ class RegressionLossFunction(six.with_metaclass(ABCMeta, LossFunction)):
                              "was %r" % n_classes)
         super(RegressionLossFunction, self).__init__(n_classes)
 
+
 # Class defined for the loss of constriant error effort.
 class ConstraintLoss(RegressionLossFunction):
     """Loss function for least squares (LS) estimation, where constraints are taken into account.
@@ -292,11 +294,11 @@ class ConstraintLoss(RegressionLossFunction):
     def __call__(self, y, pred, sample_weight=None):
         # calculating the loss in 2 phases - least squared part and the constraint part, and then summing all together
         # adding two columns to the matrix, so it will be easier to analyse and define the gradient
-        constraints_with_pred = self.constraints_df
+        constraints_with_pred = self.constraints_df.copy()
         constraints_with_pred['pred'] = pred[list(self.constraints_df.index)]
         constraints_with_pred['true'] = y[list(self.constraints_df.index)]
 
-        # case there isn't any defintion of sample weights
+        # case there isn't any definition of sample weights
         if sample_weight is None:
             lse_part = np.mean((y - pred.ravel()) ** 2.0)
             constraints_part = np.mean(constraints_with_pred.apply(lambda x: max(x['min_value'] - x['pred'], 0)**2 +
@@ -507,6 +509,7 @@ class HuberLossFunction(RegressionLossFunction):
             np.sign(diff_minus_median) *
             np.minimum(np.abs(diff_minus_median), gamma))
 
+
 class QuantileLossFunction(RegressionLossFunction):
     """Loss function for quantile regression.
 
@@ -571,6 +574,7 @@ class ClassificationLossFunction(six.with_metaclass(ABCMeta, LossFunction)):
 
         Returns int arrays.
         """
+
 
 class BinomialDeviance(ClassificationLossFunction):
     """Binomial deviance loss function for binary classification.
@@ -837,6 +841,7 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble, _LearntSele
                  random_state, alpha=0.9, verbose=0, max_leaf_nodes=None,
                  warm_start=False, presort='auto'):
 
+        self.constraint_obj = constraint_obj
         self.n_estimators = constraint_obj.n_estimators
         self.learning_rate = constraint_obj.learning_rate
         self.loss = constraint_obj.loss
@@ -854,7 +859,7 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble, _LearntSele
         self.warm_start = warm_start
         self.presort = presort
 
-        self.constraints_df = constraint_obj.constraints_df_train
+        self.constraints_df = constraint_obj.constraints_df_train.copy()
         self.constraints_gamma = constraint_obj.constraint_gamma
         self.constraints_eta = constraint_obj.constraint_eta
         self.constraints_weights = None
@@ -905,10 +910,10 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble, _LearntSele
                          check_input=False, X_idx_sorted=X_idx_sorted)
 
 
-            #case we are in a mode using SVR in the leaves - we'll use the function we created for building the models
-            if(self.SVR_in_leaves):
+            # case we are in a mode using SVR in the leaves - we'll use the function we created for building the models
+            if self.SVR_in_leaves :
                 loss.my_update_terminal_regions(self.all_trees_models,tree.tree_, X, y, residual,y_pred, sample_weight, sample_mask, self.learning_rate,k, SVR_parmas = self.SVR_parmas)
-            #case we are in a mode using the regular average in the leaves - we'll use the original function
+            # case we are in a mode using the regular average in the leaves - we'll use the original function
             else:
                 loss.update_terminal_regions(tree.tree_, X, y, residual,y_pred,sample_weight, sample_mask, self.learning_rate, k=k)
             # add tree to ensemble
@@ -1190,9 +1195,18 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble, _LearntSele
         for i in range(begin_at_stage, self.n_estimators):
 
             if weights_based_constraints_sol:
-                # loop over each constraint, it the constraint is not satisifed, the weight will be increased
+                # loop over each constraint, if the constraint is not satisfied, the weight might be changed (not
+                # for sure because we might apply "early stopping" to the weight change
                 for index, row in self.constraints_df.iterrows():
-                    if y_pred[index] > row['max_value'] or y_pred[index] < row['min_value']:
+                    # case the observation is not constrainted at all
+                    if not self.constraint_obj.is_constrainted[index]:
+                        continue
+                    still_alive = self.constraint_obj.still_candidate(index=index, loop_number=i)
+                    # case the early stopping turned on, we need to reset the weight to 1 again since we gave up with
+                    # satisfying the specific observation
+                    if not still_alive:
+                        self.constraints_weights[index]=1
+                    if still_alive and (y_pred[index] > row['max_value'] or y_pred[index] < row['min_value']):
                         self.constraints_weights[index] *= (1+self.constraints_eta)
             # subsampling
             if do_oob:
@@ -1207,6 +1221,9 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble, _LearntSele
             y_pred = self._fit_stage(i, X, y, y_pred, sample_weight*self.constraints_weights,
                                      sample_mask, random_state, X_idx_sorted,
                                      X_csc, X_csr)
+            # updating the satisfaction status, so we'll be able to use 'early_stopping' related to constraints
+            if weights_based_constraints_sol:
+                self.constraint_obj.update_satisfaction(predictions=y_pred, loop_number=i)
 
             # track deviance (= loss)
             if do_oob:
@@ -1303,24 +1320,23 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble, _LearntSele
             observation_location = cur_tree.apply(X)
             cur_prediction = np.zeros(observation_location.size)
 
-            #go over each leaf in the tree (<-> each node we have some unit which fall into)
+            # go over each leaf in the tree (<-> each node we have some unit which fall into)
             for j in range(0,len(self.all_trees_models[i])):
-                #case the specific node holds no model (-1 means no model)
+                # case the specific node holds no model (-1 means no model)
                 if self.all_trees_models[i][j] == -1:
                     continue
-                #case the node is a leaf and it does hold a model
+                # case the node is a leaf and it does hold a model
                 else:
                     cur_model = self.all_trees_models[i][j]
                     relevant_idx = np.where(observation_location==j)[0]
-                    #case in the specific leaf we are in, no observation fail into - it means that we can skip the current leaf
+                    # case in the specific leaf we are in, no observation fail into - it means that we can skip the current leaf
                     if(relevant_idx.size == 0):
                         continue
-                    #cur_prediction[relevant_idx] = self.estimators_[i][0].tree_.predict(X[relevant_idx,:])
-                    #apply the prediction using the relevant model
+                    # cur_prediction[relevant_idx] = self.estimators_[i][0].tree_.predict(X[relevant_idx,:])
+                    # apply the prediction using the relevant model
                     cur_prediction[relevant_idx] = cur_model.predict(X[(relevant_idx),:])
                     final_prediction[relevant_idx] += cur_prediction[relevant_idx]*self.learning_rate
         return final_prediction
-
 
     def decision_function(self, X):
         """Compute the decision function of ``X``.

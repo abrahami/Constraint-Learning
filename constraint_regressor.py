@@ -14,13 +14,19 @@ class ConstraintRegressor(object):
     DOCUMANTATION
     """
 
-    def __init__(self, cv_params={'percentile_threshold': 0.1, 'constraint_interval_size': 0.05},
-                 gbt_params={'n_estimators': 100, 'max_depth': 5, 'min_samples_split': 1,
-                             'learning_rate': 0.01, 'loss': 'ls'},
-                 constraints_params={'eta': 0.1, 'gamma': 1},
+    def __init__(self, cv_params=None, gbt_params=None, constraints_params=None, constraint_early_stopping=True,
                  dataset="boston", test_percent=0.3, seed=123):
+
+        if cv_params is None:
+            cv_params = {'percentile_threshold': 0.1, 'constraint_interval_size': 0.05}
+        if gbt_params is None:
+            gbt_params = {'n_estimators': 100, 'max_depth': 5, 'min_samples_split': 1, 'learning_rate': 0.01,
+                          'loss': 'ls'}
+        if constraints_params is None:
+            constraints_params = {'eta': 0.1, 'gamma': 1}
         self.percentile_threshold = cv_params['percentile_threshold']
         self.constraint_interval_size = cv_params['constraint_interval_size']
+        self.constraint_early_stopping = constraint_early_stopping
         self.dataset = dataset
         self.test_percent = test_percent
         self.seed = seed
@@ -31,8 +37,26 @@ class ConstraintRegressor(object):
         self.loss = gbt_params['loss']
         self.constraint_eta = constraints_params['eta']
         self.constraint_gamma = constraints_params['gamma']
+        self.is_constrainted = None
+        self.satisfaction_history = None
         self.constraints_df_train = None
-        self.constraints_df_test = None
+        #self.constraints_df_test = None
+
+    def still_candidate(self, index, loop_number):
+        if not self.constraint_early_stopping or loop_number < 10:
+            return True
+        # current logic is VERY simple, we should make it a bit more complicated
+        elif not self.satisfaction_history.iloc[index, loop_number-1] and not self.satisfaction_history.iloc[index, loop_number-2]:
+            return False
+        else:
+            return True
+
+    def update_satisfaction(self, predictions, loop_number):
+        constraints_df_with_pred = self.constraints_df_train.copy()
+        constraints_df_with_pred["pred"] = predictions
+        cur_satisfaction = constraints_df_with_pred.apply(lambda x: x['min_value'] <= x["pred"] <= x['max_value'],
+                                                          axis=1)
+        self.satisfaction_history.iloc[:,loop_number] = cur_satisfaction
 
     def load_dataset(self, data_path):
         """
@@ -179,8 +203,16 @@ class ConstraintRegressor(object):
                     (y_test[test_percentile_indic] +
                      abs(y_test[test_percentile_indic] * self.constraint_interval_size))
 
+        # updating the constraints object with the most important subject - the constraints
         self.constraints_df_train = constraints_df_train
-        self.constraints_df_test = constraints_df_test
+        #self.constraints_df_test = constraints_df_test
+        self.is_constrainted = ~constraints_df_train.apply(lambda x: x['min_value'] == float("-inf")
+                                                                 and x['max_value'] == float("+inf"), axis=1)
+        self.satisfaction_history = pd.DataFrame(data=True,
+                                                 index=constraints_df_train.index,
+                                                 columns=["iter_" + str(i) for i in range(0, self.n_estimators)],
+                                                 dtype='bool')
+        self.satisfaction_history[self.is_constrainted] = False
         return ({"X_train": X_train,
                  "y_train": y_train,
                  "X_test": X_test,
@@ -189,7 +221,7 @@ class ConstraintRegressor(object):
                  "constraints_df_test": constraints_df_test})
 
     @staticmethod
-    def histogram_plot(constraints_df, saving_path, header=None):
+    def histogram_plot(constraints_df, prediction, saving_path, header=None):
         """
         plotting a histogram of the constrained instances. Values above zero are the ones we satisfied the constraints.
         Value of the graph the the d1 distance from the constraint
@@ -206,14 +238,16 @@ class ConstraintRegressor(object):
                 print "some error in the _assign_value function! Check it"
                 return None
 
+        constraints_df_with_pred = constraints_df.copy()
+        constraints_df_with_pred["pred"] = prediction
         # turning off the interactive mode, so plots will not be displayed (they are all saved in a directory)
         # Also cleaning the plt area
         plt.clf()
         plt.ioff()
         # Show the joint distribution using kernel density estimation
-        is_constrained = constraints_df.apply(lambda x: False if (x['min_value'] == float("-inf")
+        is_constrained = constraints_df_with_pred.apply(lambda x: False if (x['min_value'] == float("-inf")
                                                                   and x['max_value'] == float("inf")) else True, axis=1)
-        constraints_df_subset = constraints_df.loc[is_constrained]
+        constraints_df_subset = constraints_df_with_pred.loc[is_constrained]
         total = constraints_df_subset.shape[0]
         distance_from_constraint = constraints_df_subset.apply(_distance_calc, axis=1)
         constraints_satisfied = sum([1 if i > 0 else 0 for i in distance_from_constraint]) * 1.0 / total
@@ -352,12 +386,12 @@ class ConstraintRegressor(object):
                                                                       and x['max_value'] == float("+inf"), axis=1))
         n_constraints = float(constraints_df.shape[0] - redundant_constraints)
         mse = mean_squared_error(y_true, y_predicted)
-        constraints_with_pred = constraints_df
+        constraints_with_pred = constraints_df.copy()
         constraints_with_pred['pred'] = y_predicted
         constraints_with_pred['true'] = y_true
 
-        illogical_constraints = np.sum(constraints_df.apply(lambda x: (x['min_value'] > x['true'])
-                                                                      or (x['max_value'] < x['true']), axis=1))
+        illogical_constraints = np.sum(constraints_with_pred.apply(lambda x: (x['min_value'] > x['true'])
+                                                                             or (x['max_value'] < x['true']), axis=1))
         if illogical_constraints:
             print "Error: you have % d illogical constraints in your matrix. Please check all of them and try again." \
                   "" % illogical_constraints

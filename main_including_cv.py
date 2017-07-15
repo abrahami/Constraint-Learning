@@ -29,6 +29,7 @@ for j in range(config_df.shape[0]):
                                                          'loss': cur_config['loss']},
                                              constraints_params={'eta': cur_config['constraints_eta'],
                                                                  'gamma': cur_config['constraints_gamma']},
+                                             constraint_early_stopping=True,
                                              dataset=cur_config['dataset'], test_percent=cur_config['test_percent'],
                                              seed=cur_config['gbt_seed'])
 
@@ -83,12 +84,13 @@ for j in range(config_df.shape[0]):
 
         cur_prediction = clf.predict(X_test)
         cur_eval = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
-                                                       constraints_df=constraint_reg_obj.constraints_df_test)
+                                                       constraints_df=constraints_df_test)
         ConstraintRegressor.scatter_plot(x=y_test, y=cur_prediction, x_name='True Value', y_name='Predicted Value',
-                                         constraints_df=constraint_reg_obj.constraints_df_test,
+                                         constraints_df=constraints_df_test,
                                          saving_path=general_path + "\\Results\\option_a_config_no_"
                                                      + str(cur_config['index'])+".jpg")
-        ConstraintRegressor.histogram_plot(constraints_df=constraint_reg_obj.constraints_df_test,
+        ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
+                                           prediction = cur_prediction,
                                            saving_path=general_path + "\\Results\\histogram_option_a_config_no_"
                                                        + str(cur_config['index'])+".jpg")
 
@@ -134,12 +136,13 @@ for j in range(config_df.shape[0]):
 
         cur_prediction = clf.predict(X_test)
         cur_eval = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
-                                                       constraints_df=constraint_reg_obj.constraints_df_test)
+                                                       constraints_df=constraints_df_test)
         ConstraintRegressor.scatter_plot(x=y_test, y=cur_prediction, x_name='True Value', y_name='Predicted Value',
-                                         constraints_df=constraint_reg_obj.constraints_df_test,
+                                         constraints_df=constraints_df_test,
                                          saving_path=general_path + "\\Results\\option_b_config_no_"
                                                             + str(cur_config['index'])+".jpg")
-        ConstraintRegressor.histogram_plot(constraints_df=constraint_reg_obj.constraints_df_test,
+        ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
+                                           prediction=cur_prediction,
                                            saving_path=general_path + "\\Results\\histogram_option_b_config_no_"
                                                        + str(cur_config['index'])+".jpg")
         print "TEST dataset:" + str(cur_eval)
@@ -189,9 +192,10 @@ for j in range(config_df.shape[0]):
                                    saving_path=general_path + "\\Results\\option_c_config_no_"
                                                             + str(cur_config['index'])+".jpg")
         ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
-                                       saving_path=general_path +
-                                                   "\\Results\\histogram_option_c_config_no_"
-                                                   + str(cur_config['index'])+".jpg")
+                                           prediction=cur_prediction,
+                                           saving_path=general_path +
+                                                       "\\Results\\histogram_option_c_config_no_"
+                                                       + str(cur_config['index'])+".jpg")
         print "TEST dataset:" + str(cur_eval)
         cur_full_log = copy.copy(config_details)
         cur_full_log.extend(("Option C - smart weight to constrainted",
@@ -241,6 +245,7 @@ for j in range(config_df.shape[0]):
                                          saving_path=general_path +"\\Results\\option_d_config_no_"
                                                      + str(cur_config['index'])+".jpg")
         ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
+                                           prediction=cur_prediction,
                                            saving_path=general_path +
                                                        "\\Results\\histogram_option_d_config_no_"
                                                        + str(cur_config['index'])+".jpg")
@@ -286,12 +291,13 @@ for j in range(config_df.shape[0]):
 
         cur_prediction = clf.predict(X_test)
         cur_eval = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
-                                                       constraints_df=constraint_reg_obj.constraints_df_test)
+                                                       constraints_df=constraints_df_test)
         ConstraintRegressor.scatter_plot(x=y_test, y=cur_prediction, x_name='True Value', y_name='Predicted Value',
                                          constraints_df=constraints_df_test,
                                          saving_path=general_path +"\\Results\\option_e_config_no_"
                                                      + str(cur_config['index'])+".jpg")
         ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
+                                           prediction=cur_prediction,
                                            saving_path=general_path + "\\Results\\histogram_option_e_config_no_"
                                                        + str(cur_config['index'])+".jpg")
         print "TEST dataset:" + str(cur_eval)
