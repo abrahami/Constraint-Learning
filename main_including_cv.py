@@ -11,6 +11,8 @@ import csv
 import copy
 from constraint_regressor import ConstraintRegressor
 
+__author__ = 'abrahami'
+
 general_path = "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis"
 ###############################################################################
 # reading configuration from a file with all config needed to be run
