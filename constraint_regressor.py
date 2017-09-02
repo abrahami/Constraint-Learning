@@ -11,7 +11,49 @@ __author__ = 'abrahami'
 
 class ConstraintRegressor(object):
     """
-    DOCUMANTATION
+    class to manage the constrained gradient boosting regressor algorithm.
+    It includes functions to be used by the GBT algorithm and variables held inside the object to easily follow the
+    algorithm steps and analyse results afterwards
+
+    Parameters
+    ----------
+    cv_params: dictionary, default: None
+        cross validation algorithm parameters. should include 'percentile_threshold' and 'constraint_interval_size'
+        in case None is provided the values set are: 'percentile_threshold': 0.1 'constraint_interval_size': 0.05
+    gbt_params: dictionary, default: None
+        gradient boosting trees parameters. should include 'n_estimators', 'max_depth','min_samples_split',
+        'learning_rate' and 'loss'
+        in case None is provided the values set are: 'n_estimators': 100, 'max_depth': 5, 'min_samples_split': 1,
+        'learning_rate': 0.01, 'loss': 'ls'
+    constraints_params: dictionary, default: None
+        constraints related parameters. should include 'eta' and 'gamma'
+        in case None is provided the values set are: 'eta': 0.1, 'gamma': 1
+    constraint_early_stopping: boolean, default: True
+        whether or not to apply an early stopping rule to constraints. If set to True, the logic in 'still_candidate'
+        function is applied in each step of the algorithm
+    dataset: string, default: "boston"
+        dataset to be used along the run, must be one out of the following:
+        'boston', 'diabetes', 'news', 'ailerons', 'kc_house', 'compactiv_data', 'bikeSharing_data',
+        'CTSlices_data', 'Intel_CHT_data', 'parkinson_updrs', 'parkinson_mpower', 'flights', 'Intel_BI_SKL_22'
+    test_percent: float, default: 0.3
+        percentage of population to be used as a test (i.e. validation) dataset. This % of the population is not
+        used at all for learning and building the algorithm but only for validating it
+    seed: int, default: 123
+        seed value used for building the algorithm. It is useful for running the algorithm twice (or more) in exactly
+        the same way
+
+    Attributes
+    ----------
+    is_constrainted: pandas series (vector of booleans)
+        vector with True/False whether each instance is constrainted or not (length: as the # of instances in the data)
+    satisfaction_history: dataframe
+        dataframe which represnts to each instance if its constraint was satisfied or not in the i'th iteration.
+        If the instance is not constrint at all, it will have True in all places.
+        Number of rows: # of instances in the data
+        Number of columns: # of iterations in the algorithm
+    constraints_df_train: dataframe
+        dataframe containing useful information about the constraints of each instance.
+        Columns maintained in this
     """
 
     def __init__(self, cv_params=None, gbt_params=None, constraints_params=None, constraint_early_stopping=True,
@@ -40,28 +82,52 @@ class ConstraintRegressor(object):
         self.is_constrainted = None
         self.satisfaction_history = None
         self.constraints_df_train = None
-        #self.constraints_df_test = None
 
     def still_candidate(self, index, loop_number):
-        if not self.constraint_early_stopping or loop_number < 10:
+        """
+        simple function to return a boolean decision regarding a specific instance - whether it is still 'playing' in
+        the algorithm or not. Reason no to 'play' can be:
+        1. the instance wasn't constrained at all from the beginning
+        2. early stopping criteria - which stoops the efforts of satisfying the constraints on the instance after
+        few tries
+        constraints of instances w
+        :param index: int
+            instance index (must be >=0)
+        :param loop_number: int
+            iteration number in the GBT model (mist be >=1)
+        :return: boolean
+            True in case the instance is still a candidate to try and satisfy it's constraints, False if not
+        """
+        # case the early stopping criteria is not turned on or we are at a very early stage of the algorithm
+        if (not self.is_constrainted[index]) or (not self.constraint_early_stopping) or (loop_number < 10):
             return True
-        # current logic is VERY simple, we should make it a bit more complicated
-        elif not self.satisfaction_history.iloc[index, loop_number-1] and not self.satisfaction_history.iloc[index, loop_number-2]:
+        # case the early stopping is turned on and the instance doesn't meet the constraints in the last 10 loops
+        elif sum(self.satisfaction_history.iloc[index, loop_number-10:loop_number]) == 0:
             return False
         else:
             return True
 
     def update_satisfaction(self, predictions, loop_number):
+        """
+        updates the 'satisfaction_history' data-frame with a full column (i.e. for all instances)
+        :param predictions: array
+            vector with current loop predictions to all instances
+        :param loop_number: int
+            loop number in the algorithm (must be >=1)
+        :return: nothing
+            only updates the class object variable('satisfaction_history' variable)
+        """
         constraints_df_with_pred = self.constraints_df_train.copy()
         constraints_df_with_pred["pred"] = predictions
         cur_satisfaction = constraints_df_with_pred.apply(lambda x: x['min_value'] <= x["pred"] <= x['max_value'],
                                                           axis=1)
-        self.satisfaction_history.iloc[:,loop_number] = cur_satisfaction
+        self.satisfaction_history.iloc[:, loop_number] = cur_satisfaction
 
     def load_dataset(self, data_path):
         """
         load_data-set function gets a string as input and creates a data-set to work with along the algorithm
-        :param data_path: ???
+        :param data_path: string
+            location where the general path of the datasets are stored
         :return: dictionary with 3 values - train data-set, test data-set and the constraints matrix
         """
 

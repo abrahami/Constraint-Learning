@@ -90,7 +90,7 @@ for j in range(config_df.shape[0]):
                                          saving_path=general_path + "\\Results\\option_a_config_no_"
                                                      + str(cur_config['index'])+".jpg")
         ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
-                                           prediction = cur_prediction,
+                                           prediction=cur_prediction,
                                            saving_path=general_path + "\\Results\\histogram_option_a_config_no_"
                                                        + str(cur_config['index'])+".jpg")
 
