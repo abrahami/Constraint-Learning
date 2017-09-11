@@ -5,6 +5,8 @@ from numpy.random import mtrand
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datetime import datetime
+import copy
 
 __author__ = 'abrahami'
 
@@ -77,7 +79,7 @@ class ConstraintRegressor(object):
         self.min_samples_split = gbt_params['min_samples_split']
         self.learning_rate = gbt_params['learning_rate']
         self.loss = gbt_params['loss']
-        self.constraint_eta = constraints_params['eta']
+        self.constraints_eta = constraints_params['eta']
         self.constraint_gamma = constraints_params['gamma']
         self.is_constrainted = None
         self.satisfaction_history = None
@@ -99,10 +101,11 @@ class ConstraintRegressor(object):
             True in case the instance is still a candidate to try and satisfy it's constraints, False if not
         """
         # case the early stopping criteria is not turned on or we are at a very early stage of the algorithm
-        if (not self.is_constrainted[index]) or (not self.constraint_early_stopping) or (loop_number < 10):
+        if (not self.is_constrainted[index]) or (not self.constraint_early_stopping)\
+                or(loop_number < self.n_estimators/2.0):
             return True
         # case the early stopping is turned on and the instance doesn't meet the constraints in the last 10 loops
-        elif sum(self.satisfaction_history.iloc[index, loop_number-10:loop_number]) == 0:
+        elif sum(self.satisfaction_history.iloc[index, int(loop_number-self.n_estimators/2.0):loop_number]) == 0:
             return False
         else:
             return True
@@ -476,3 +479,61 @@ class ConstraintRegressor(object):
 
         return {'n_constraints': n_constraints, 'MSE': mse,
                 'CER': constraints_misses / n_constraints, 'CMSE': sum_constraints_violation / n_constraints}
+
+    def general_weight_loop(self, data, clf, weights):
+        X_train = data["X_train"]
+        y_train = data["y_train"]
+        X_test = data["X_test"]
+        y_test = data["y_test"]
+        constraints_df_test = data["constraints_df_test"]
+        results_df = pd.DataFrame(index=weights,
+                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train',
+                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test'],
+                                  dtype='float')
+        for cur_weight in weights:
+            print "\nStarted option B with weight = {}".format(str(cur_weight))
+            sample_weight = ConstraintRegressor.assign_weights(y_true=y_train,
+                                                               constraints_df=self.constraints_df_train,
+                                                               method="const", const_value=cur_weight)
+            clf.fit(X_train, y_train, sample_weight=sample_weight, weights_based_constraints_sol=False)
+            cur_eval_train = ConstraintRegressor.regression_eval(y_true=y_train, y_predicted=clf.predict(X_train),
+                                                                 constraints_df=self.constraints_df_train)
+            cur_prediction = clf.predict(X_test)
+            cur_eval_test = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
+                                                                constraints_df=constraints_df_test)
+            results_df.loc[cur_weight, :] = [cur_eval_train['n_constraints'],
+                                             cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
+                                             cur_eval_test['n_constraints'],
+                                             cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+        return results_df
+
+    def dynamic_weight_loop(self, data, clf, etas):
+        X_train = data["X_train"]
+        y_train = data["y_train"]
+        X_test = data["X_test"]
+        y_test = data["y_test"]
+        constraints_df_test = data["constraints_df_test"]
+        results_df = pd.DataFrame(index=etas,
+                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train',
+                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test'],
+                                  dtype='float')
+        for cur_eta in etas:
+            print "\nStarted option D with eta = {}".format(str(cur_eta))
+            self.constraints_eta = cur_eta
+            clf.constraint_obj.constraints_eta = cur_eta
+            clf.constraints_eta = cur_eta
+            sample_weight = ConstraintRegressor.assign_weights(y_true=y_train,
+                                                               constraints_df=self.constraints_df_train,
+                                                               method="const", const_value=1)
+            clf.fit(X_train, y_train, sample_weight=sample_weight, weights_based_constraints_sol=True)
+
+            cur_eval_train = ConstraintRegressor.regression_eval(y_true=y_train, y_predicted=clf.predict(X_train),
+                                                                 constraints_df=self.constraints_df_train)
+            cur_prediction = clf.predict(X_test)
+            cur_eval_test = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
+                                                                constraints_df=constraints_df_test)
+            results_df.loc[cur_eta, :] = [cur_eval_train['n_constraints'],
+                                          cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
+                                          cur_eval_test['n_constraints'],
+                                          cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+        return results_df
