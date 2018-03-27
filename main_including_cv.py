@@ -17,10 +17,11 @@ general_path = "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis"
 ###############################################################################
 # reading configuration from a file with all config needed to be run
 config_df = pd.read_csv(general_path + "\\python_code\\GIT\\Constraint-Learning\\configurations.csv")
-iterate_over_params = True
-run_option_a = False
+save_row_level_results = True
+iterate_over_params = False
+run_option_a = True
 run_option_b = True
-run_option_c = False
+run_option_c = True
 run_option_d = True
 run_option_e = True
 
@@ -60,7 +61,7 @@ for j in range(config_df.shape[0]):
                       constraint_reg_obj.loss,
                       constraint_reg_obj.constraints_eta,
                       constraint_reg_obj.seed,
-                      constraint_reg_obj.constraint_gamma,
+                      constraint_reg_obj.constraints_gamma,
                       constraint_reg_obj.constraint_early_stopping]
 
     # defining the output file we'll write to (logs and results)
@@ -69,6 +70,16 @@ for j in range(config_df.shape[0]):
     excel_writer = pd.ExcelWriter(general_path + '\\Results\\looping_results_index_' +
                                   str(cur_config['index']) + '.xlsx')
     clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
+
+    # case we want to save the results, we are creating an object which will hold the saved data at the end
+    if save_row_level_results:
+        row_level_df_resuls = constraints_df_train.append(constraints_df_test)
+        row_level_df_resuls["dataset"] = 'train'
+        row_level_df_resuls.iloc[constraints_df_train.shape[0]:, 3] = 'test'
+        row_level_df_resuls["is_constrainted"] = ~row_level_df_resuls.apply(lambda x: x['min_value'] == float("-inf")
+                                                                                      and x['max_value'] == float("+inf"), axis=1)
+        row_level_df_resuls["y_true"] = list(y_train)+list(y_test)
+
     # now building a model with the restrictions
     # Option A - not taking into consideration the restrictions at all
     if run_option_a:
@@ -111,29 +122,22 @@ for j in range(config_df.shape[0]):
                              cur_eval['MSE'],
                              cur_eval['CER']))
         writer.writerow(cur_full_log)
-
-
-        # saving the predictions to a file, for future usage - Export this to a function in the future!!
-        '''
-        constraints_df_for_saving = constraints_df_train.append(constraints_df_test)
-        constraints_df_for_saving["dataset"] = 'train'
-        constraints_df_for_saving.iloc[constraints_df_train.shape[0]:, 5] = 'test'
-        constraints_df_for_saving.to_csv(path_or_buf=general_path + "\\Results\\prediction_optionA.csv")
-        '''
+        if save_row_level_results:
+            row_level_df_resuls["standard_gbt"] = list(clf.predict(X_train)) + list(cur_prediction)
 
     # Option B - taking the restrictions in a  general attitude - giving global weights to the constrained instances
     if run_option_b:
         start_time = datetime.now()
         if iterate_over_params:
             general_weight_loop_results = constraint_reg_obj.general_weight_loop(data=data, clf=clf,
-                                                                                 weights=[1, 5, 10, 100, 500, 1000])
+                                                                                 weights=[50, 500, 5000])
             general_weight_loop_results.to_excel(excel_writer, sheet_name='general_weight_loop')
             excel_writer.save
         # single run without running over few initial weights
         else:
             sample_weight = ConstraintRegressor.assign_weights(y_true=y_train,
                                                                constraints_df=constraint_reg_obj.constraints_df_train,
-                                                               method="const", const_value=10)
+                                                               method="const", const_value=100)
             clf.fit(X_train, y_train, sample_weight=sample_weight, weights_based_constraints_sol=False)
             duration = (datetime.now() - start_time).seconds
             print "\nOption B - giving general weights to the constrained instances:"
@@ -171,14 +175,8 @@ for j in range(config_df.shape[0]):
                                  cur_eval['MSE'],
                                  cur_eval['CER']))
             writer.writerow(cur_full_log)
-
-            '''
-            # saving the predictions to a file, for future usage - Export this to a function in the future!!
-            constraints_df_for_saving = constraints_df_train.append(constraints_df_test)
-            constraints_df_for_saving["dataset"] = 'train'
-            constraints_df_for_saving.iloc[constraints_df_train.shape[0]:, 5] = 'test'
-            constraints_df_for_saving.to_csv(path_or_buf=general_path + "\\Results\\prediction_optionB.csv")
-            '''
+        if save_row_level_results:
+            row_level_df_resuls["constant_weight"] = list(clf.predict(X_train)) + list(cur_prediction)
 
     # Option C - taking the restrictions into account by setting weights according to the constraint's difficultness
     if run_option_c:
@@ -224,13 +222,8 @@ for j in range(config_df.shape[0]):
                              cur_eval['CER']))
         writer.writerow(cur_full_log)
 
-        '''
-        # saving the predictions to a file, for future usage - Export this to a function in the future!!
-        constraints_df_for_saving = constraints_df_train.append(constraints_df_test)
-        constraints_df_for_saving["dataset"] = 'train'
-        constraints_df_for_saving.iloc[constraints_df_train.shape[0]:, 5] = 'test'
-        constraints_df_for_saving.to_csv(path_or_buf=general_path + "\\Results\\prediction_optionC.csv")
-        '''
+        if save_row_level_results:
+            row_level_df_resuls["smart_weight"] = list(clf.predict(X_train)) + list(cur_prediction)
 
     # Option D - taking the constraints per each loop and learning according to the 1st approach
     # (weights change per loop)
@@ -239,7 +232,7 @@ for j in range(config_df.shape[0]):
         clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
         if iterate_over_params:
             dynamic_weight_loop_results = constraint_reg_obj.dynamic_weight_loop(data=data, clf=clf,
-                                                                                 etas=[0.0001, 0.001, 0.005, 0.01, 0.1, 0.2])
+                                                                                 etas=[0.0125, 0.015, 0.075, 0.05, 0.075, 0.15, 0.2])
             dynamic_weight_loop_results.to_excel(excel_writer, sheet_name='dynamic_weight_loop')
             excel_writer.save
         # single run without running over few etas
@@ -285,65 +278,64 @@ for j in range(config_df.shape[0]):
                                  cur_eval['MSE'],
                                  cur_eval['CER']))
             writer.writerow(cur_full_log)
-            #constraint_reg_obj.satisfaction_history.to_csv(path_or_buf=general_path + "\\Results\\satisfaction.csv")
-            '''
-            # saving the predictions to a file, for future usage - Export this to a function in the future!!
-            constraints_df_for_saving = constraints_df_train.append(constraints_df_test)
-            constraints_df_for_saving["dataset"] = 'train'
-            constraints_df_for_saving.iloc[constraints_df_train.shape[0]:, 5] = 'test'
-            constraints_df_for_saving.to_csv(path_or_buf=general_path + "\\Results\\prediction_optionD.csv")
-            '''
+        if save_row_level_results:
+            row_level_df_resuls["dynamic_weight"] = list(clf.predict(X_train))+ list(cur_prediction)
 
     # Option E - taking the constraints per each loop and learning according to 2nd approach (loss+gradient change)
     if run_option_e:
         start_time = datetime.now()
         constraint_reg_obj.loss = "constraints"
         clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
-        clf.fit(X_train, y_train, weights_based_constraints_sol=False)
-        duration = (datetime.now() - start_time).seconds
-        print "\nOption E - learning according to our 2nd model approach - loss and gradient change:"
-        cur_eval = ConstraintRegressor.regression_eval(y_true=y_train, y_predicted=clf.predict(X_train),
-                                                       constraints_df=constraint_reg_obj.constraints_df_train)
-        print "TRAIN dataset:" + str(cur_eval)
-        cur_full_log = copy.copy(config_details)
-        cur_full_log.extend(("Option E - our 2nd algo - new loss function",
-                             "train",
-                             duration,
-                             cur_eval['n_constraints'],
-                             cur_eval['CMSE'],
-                             cur_eval['MSE'],
-                             cur_eval['CER']))
-        writer.writerow(cur_full_log)
 
-        cur_prediction = clf.predict(X_test)
-        cur_eval = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
-                                                       constraints_df=constraints_df_test)
-        ConstraintRegressor.scatter_plot(x=y_test, y=cur_prediction, x_name='True Value', y_name='Predicted Value',
-                                         constraints_df=constraints_df_test,
-                                         saving_path=general_path +"\\Results\\option_e_config_no_"
-                                                     + str(cur_config['index'])+".jpg")
-        ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
-                                           prediction=cur_prediction,
-                                           saving_path=general_path + "\\Results\\histogram_option_e_config_no_"
-                                                       + str(cur_config['index'])+".jpg")
-        print "TEST dataset:" + str(cur_eval)
-        cur_full_log = copy.copy(config_details)
-        cur_full_log.extend(("Option E - our 2nd algo - new loss function",
-                             "test",
-                             duration,
-                             cur_eval['n_constraints'],
-                             cur_eval['CMSE'],
-                             cur_eval['MSE'],
-                             cur_eval['CER']))
-        writer.writerow(cur_full_log)
+        if iterate_over_params:
+            new_gradient_loop_results = constraint_reg_obj.new_gradinet_loop(data=data, clf=clf,
+                                                                             gammas=[50, 200, 500, 1500])
+            new_gradient_loop_results.to_excel(excel_writer, sheet_name='new_gradient_loop')
+            excel_writer.save
+        else:
+            clf.fit(X_train, y_train, weights_based_constraints_sol=False)
+            duration = (datetime.now() - start_time).seconds
+            print "\nOption E - learning according to our 2nd model approach - loss and gradient change:"
+            cur_eval = ConstraintRegressor.regression_eval(y_true=y_train, y_predicted=clf.predict(X_train),
+                                                           constraints_df=constraint_reg_obj.constraints_df_train)
+            print "TRAIN dataset:" + str(cur_eval)
+            cur_full_log = copy.copy(config_details)
+            cur_full_log.extend(("Option E - our 2nd algo - new loss function",
+                                 "train",
+                                 duration,
+                                 cur_eval['n_constraints'],
+                                 cur_eval['CMSE'],
+                                 cur_eval['MSE'],
+                                 cur_eval['CER']))
+            writer.writerow(cur_full_log)
 
-        '''
-        # saving the predictions to a file, for future usage - Export this to a function in the future!!
-        constraints_df_for_saving = constraints_df_train.append(constraints_df_test)
-        constraints_df_for_saving["dataset"] = 'train'
-        constraints_df_for_saving.iloc[constraints_df_train.shape[0]:, 5] = 'test'
-        constraints_df_for_saving.to_csv(path_or_buf=general_path + "\\Results\\prediction_optionE.csv")
-        '''
+            cur_prediction = clf.predict(X_test)
+            cur_eval = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
+                                                           constraints_df=constraints_df_test)
+            ConstraintRegressor.scatter_plot(x=y_test, y=cur_prediction, x_name='True Value', y_name='Predicted Value',
+                                             constraints_df=constraints_df_test,
+                                             saving_path=general_path +"\\Results\\option_e_config_no_"
+                                                         + str(cur_config['index'])+".jpg")
+            ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
+                                               prediction=cur_prediction,
+                                               saving_path=general_path + "\\Results\\histogram_option_e_config_no_"
+                                                           + str(cur_config['index'])+".jpg")
+            print "TEST dataset:" + str(cur_eval)
+            cur_full_log = copy.copy(config_details)
+            cur_full_log.extend(("Option E - our 2nd algo - new loss function",
+                                 "test",
+                                 duration,
+                                 cur_eval['n_constraints'],
+                                 cur_eval['CMSE'],
+                                 cur_eval['MSE'],
+                                 cur_eval['CER']))
+            writer.writerow(cur_full_log)
+        if save_row_level_results:
+            row_level_df_resuls["constrint_loss"] = list(clf.predict(X_train)) + list(cur_prediction)
+
+    if save_row_level_results:
+        row_level_df_resuls.to_csv(path_or_buf=general_path + "\\Results\\row_level_predictions_config_no_" +
+                                                   str(cur_config['index'])+".csv")
 # delete the csv writer, as we have just finished a loop over all options
 del writer
 del excel_writer

@@ -80,7 +80,7 @@ class ConstraintRegressor(object):
         self.learning_rate = gbt_params['learning_rate']
         self.loss = gbt_params['loss']
         self.constraints_eta = constraints_params['eta']
-        self.constraint_gamma = constraints_params['gamma']
+        self.constraints_gamma = constraints_params['gamma']
         self.is_constrainted = None
         self.satisfaction_history = None
         self.constraints_df_train = None
@@ -505,6 +505,7 @@ class ConstraintRegressor(object):
                                              cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
                                              cur_eval_test['n_constraints'],
                                              cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+            print "Results over the test data set current weight are: " + str(cur_eval_test)
         return results_df
 
     def dynamic_weight_loop(self, data, clf, etas):
@@ -522,9 +523,10 @@ class ConstraintRegressor(object):
             self.constraints_eta = cur_eta
             clf.constraint_obj.constraints_eta = cur_eta
             clf.constraints_eta = cur_eta
+            clf.constraints_weights = None
             sample_weight = ConstraintRegressor.assign_weights(y_true=y_train,
                                                                constraints_df=self.constraints_df_train,
-                                                               method="const", const_value=1)
+                                                               method="const", const_value=10)
             clf.fit(X_train, y_train, sample_weight=sample_weight, weights_based_constraints_sol=True)
 
             cur_eval_train = ConstraintRegressor.regression_eval(y_true=y_train, y_predicted=clf.predict(X_train),
@@ -536,4 +538,35 @@ class ConstraintRegressor(object):
                                           cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
                                           cur_eval_test['n_constraints'],
                                           cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+            print "Results over the test data set current eta are: " + str(cur_eval_test)
+        return results_df
+
+    def new_gradinet_loop(self, data, clf, gammas):
+        X_train = data["X_train"]
+        y_train = data["y_train"]
+        X_test = data["X_test"]
+        y_test = data["y_test"]
+        constraints_df_test = data["constraints_df_test"]
+        results_df = pd.DataFrame(index=gammas,
+                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train',
+                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test'],
+                                  dtype='float')
+        for cur_gamma in gammas:
+            print "\nStarted option E with gamma = {}".format(str(cur_gamma))
+            self.constraints_gamma = cur_gamma
+            clf.constraint_obj.constraints_gamma = cur_gamma
+            clf.constraints_gamma = cur_gamma
+            clf.constraint_obj.loss = "constraints"
+            clf.loss = "constraints"
+            clf.fit(X_train, y_train, weights_based_constraints_sol=False)
+            cur_eval_train = ConstraintRegressor.regression_eval(y_true=y_train, y_predicted=clf.predict(X_train),
+                                                                 constraints_df=self.constraints_df_train)
+            cur_prediction = clf.predict(X_test)
+            cur_eval_test = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
+                                                                constraints_df=constraints_df_test)
+            results_df.loc[cur_gamma, :] = [cur_eval_train['n_constraints'],
+                                            cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
+                                            cur_eval_test['n_constraints'],
+                                            cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+            print "Results over the test data set current gamma are: " + str(cur_eval_test)
         return results_df
