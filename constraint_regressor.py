@@ -5,8 +5,6 @@ from numpy.random import mtrand
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
-import copy
 
 __author__ = 'abrahami'
 
@@ -49,8 +47,8 @@ class ConstraintRegressor(object):
     is_constrainted: pandas series (vector of booleans)
         vector with True/False whether each instance is constrainted or not (length: as the # of instances in the data)
     satisfaction_history: dataframe
-        dataframe which represnts to each instance if its constraint was satisfied or not in the i'th iteration.
-        If the instance is not constrint at all, it will have True in all places.
+        dataframe which represents to each instance if its constraint was satisfied or not in the i'th iteration.
+        If the instance is not constrained at all, it will have True in all places.
         Number of rows: # of instances in the data
         Number of columns: # of iterations in the algorithm
     constraints_df_train: dataframe
@@ -58,11 +56,11 @@ class ConstraintRegressor(object):
         Columns maintained in this
     """
 
-    def __init__(self, cv_params=None, gbt_params=None, constraints_params=None, constraint_early_stopping=True,
+    def __init__(self, cv_params=None, gbt_params=None, constraints_params=None, constraint_early_stopping=False,
                  dataset="boston", test_percent=0.3, seed=123):
 
         if cv_params is None:
-            cv_params = {'percentile_threshold': 0.1, 'constraint_interval_size': 0.05}
+            cv_params = {'percentile_threshold': 0.9, 'constraint_interval_size': 0.05}
         if gbt_params is None:
             gbt_params = {'n_estimators': 100, 'max_depth': 5, 'min_samples_split': 1, 'learning_rate': 0.01,
                           'loss': 'ls'}
@@ -125,6 +123,92 @@ class ConstraintRegressor(object):
         cur_satisfaction = constraints_df_with_pred.apply(lambda x: x['min_value'] <= x["pred"] <= x['max_value'],
                                                           axis=1)
         self.satisfaction_history.iloc[:, loop_number] = cur_satisfaction
+
+    def set_constraints_matrix(self, y, path=None, verbose=False):
+        '''
+        creates a constraint matrix for a given data. If no path is given, it means that default constraints are
+        being generated (default is per dataset, but in most cases it means that part of the data is constrained
+        according to the value of the y feature)
+        :param y: numpy array
+            the target feature, should be a continuous one
+        :param path: string
+            path to the exact file where the constraint matrix exists. In case it is None, default constraints will be
+            generated (depends on the dataset)
+        :param verbose: boolean
+            whether or not to print a summary of the constraint matrix generated/loaded
+        :return: pandas data-frame
+            the constraints data-frame. It is a n x 2 dataframe - first column is the minimum value and the second
+            column is the maximum value. Non-constrained instances will have values of [-inf, inf] in the matrix.
+            Length of the matrix is the same as the size of the y input value
+
+        Examples
+        --------
+        >>> constraint_obj = ConstraintRegressor()
+        >>> constraint_obj.set_constraints_matrix(y=np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]))
+        >>> constraint_obj.set_constraints_matrix(y=np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]),
+        >>>                                       path=r"C:\Users\abrahami\Documents\Private\Uni\BGU\Thesis\python_code\constraints_matrix_example.csv",
+        >>>                                       verbose=True)
+        '''
+
+        if path is not None:
+            constraints_df = pd.read_csv(path)
+            if constraints_df.shape != (len(y), 2):
+                raise IOError("shape of the given constraint matrix is not in the right format. It should have two"
+                              "columns and the same length as the 'y' feature")
+            constraints_df.columns = ['min_value', 'max_value']
+            if verbose:
+                not_constrainted = np.sum(constraints_df.apply(lambda x: x['min_value'] == float("-inf")
+                                                                         and x['max_value'] == float("+inf"), axis=1))
+                print "'set_constraints_matrix' function has ended," \
+                      " {} instances were constrained out of {}".format(len(y) - not_constrainted, len(y))
+            return constraints_df
+
+        # FIRST STEP - set the constraints data-frame with default values of [-inf, inf]
+        constraints_df = pd.DataFrame(index=range(0, len(y), 1),
+                                      columns=['min_value', 'max_value'],
+                                      dtype='float')
+        constraints_df['min_value'] = float("-inf")
+        constraints_df['max_value'] = float("+inf")
+
+        # SECOND STEP - calculating an indicator vector with the places which are needed to be constrained
+        # By default, the most upper values of the y varailbe will be constrained.
+        # The 'flights' dataset is special, as we want to restrict the lower values of this data and not the upper ones
+        if self.dataset == "flights":
+            lower_percentile = np.percentile(a=y, q=(1 - self.percentile_threshold) * 100)
+            percentile_indic = ((y <= lower_percentile) & (y != 0))
+
+        # the parkinson_mpower dataset is also special, here we want to constraint all the observations with higer vlaue
+        # than 0
+        elif self.dataset == "parkinson_mpower":
+            percentile_indic = (y >= 0)
+        # in all other cases, the constraint will be assigned to the instances with the highest values in the dataset
+        else:
+            upper_percentile = np.percentile(a=y, q=self.percentile_threshold * 100)
+            percentile_indic = (y >= upper_percentile)
+
+        # THIRD STEP - generating the min value constraints (note that up to now we have only defined the indicators)
+        # parkinson_mpower dataset is special, so we'll generate a specific (min_value) constraint to this one
+        if self.dataset == "parkinson_mpower":
+            constraints_df.loc[percentile_indic, 'min_value'] = 0
+
+        # min value constraint will be generated to all datasets
+        else:
+            constraints_df.loc[percentile_indic, 'min_value'] = \
+                (y[percentile_indic] - abs(y[percentile_indic] * self.constraint_interval_size))
+
+        # FOURTH STEP - generating the max value constraints
+        # max value constraint will not be generated to some of the cases, due to business reasons, it will stay as inf
+        if self.dataset not in ["parkinson_mpower", "Intel_CHT_data", "Intel_BI_SKL_22", "kc_house"]:
+            constraints_df.loc[percentile_indic, 'max_value'] = \
+                (y[percentile_indic] + abs(y[percentile_indic] * self.constraint_interval_size))
+        # case verbose is true, we'll print a summary of the procedure
+        if verbose:
+            not_constrainted = np.sum(constraints_df.apply(lambda x: x['min_value'] == float("-inf")
+                                                                          and x['max_value'] == float("+inf"), axis=1))
+            print "'set_constraints_matrix' function has ended," \
+                  " {} instances were constrained out of {}".format(len(y)-not_constrainted, len(y))
+
+        return constraints_df
 
     def load_dataset(self, data_path):
         """
@@ -213,13 +297,8 @@ class ConstraintRegressor(object):
             y_data = data.iloc[:, 500].copy()
             y_data = np.asarray(y_data)
 
-        # creating the constraint dataframe (for train + test)
-        constraints_df = pd.DataFrame(index=range(0, X_data.shape[0], 1),
-                                      columns=['min_value', 'max_value'],
-                                      dtype='float')
-        constraints_df['min_value'] = float("-inf")
-        constraints_df['max_value'] = float("+inf")
-
+        # generating the constraint matrix
+        constraints_df = self.set_constraints_matrix(y=y_data)
         # separation the train/test (also the constraint DF)
         rows_cnt = X_data.shape[0]
         # random.seed(constraints_generator_params['seed'])
@@ -233,48 +312,8 @@ class ConstraintRegressor(object):
         y_test = y_data[msk].copy()
         constraints_df_test = constraints_df[msk].copy().reset_index()
 
-        # assigning values to the constraint df (train and test)
-        # taking a special approach with the 'flights' dataset', as we want to restrict the lower values of this data
-        if self.dataset == "flights":
-            train_percentile_down = np.percentile(a=y_train, q=(1 - self.percentile_threshold) * 100)
-            # train_percentile_up = np.percentile(a=y_train, q=cur_params['percentile_threshold'] * 100)
-            # train_percentile_indic = (((y_train <= train_percentile_down) | (y_train >= train_percentile_up))
-            #                          & (y_train != 0))
-            train_percentile_indic = ((y_train <= train_percentile_down) & (y_train != 0))
-            test_percentile_down = np.percentile(a=y_test, q=(1 - self.percentile_threshold) * 100)
-            test_percentile_indic = ((y_test <= test_percentile_down) & (y_test != 0))
-
-        elif self.dataset == "parkinson_mpower":
-            train_percentile_indic = (y_train >= 0)
-            test_percentile_indic = (y_test >= 0)
-        else:
-            train_percentile = np.percentile(a=y_train, q=self.percentile_threshold * 100)
-            train_percentile_indic = (y_train >= train_percentile)
-            test_percentile = np.percentile(a=y_test, q=self.percentile_threshold * 100)
-            test_percentile_indic = (y_test >= test_percentile)
-
-        # Now - we'll generate the constraints themselfs (up to now we have only defined the indicators)
-        if self.dataset == "parkinson_mpower":
-            constraints_df_train.loc[train_percentile_indic, 'min_value'] = 0
-            constraints_df_test.loc[test_percentile_indic, 'min_value'] = 0
-            # min value constraint will be generated to all datasets
-        else:
-            constraints_df_train.loc[train_percentile_indic, 'min_value'] = \
-                (y_train[train_percentile_indic] - abs(y_train[train_percentile_indic] * self.constraint_interval_size))
-            constraints_df_test.loc[test_percentile_indic, 'min_value'] = \
-                (y_test[test_percentile_indic] - abs(y_test[test_percentile_indic] * self.constraint_interval_size))
-            # max value constraint will not be generated to the Intel use cases, because of business reasons
-            if self.dataset != "Intel_CHT_data" and self.dataset != "Intel_BI_SKL_22":
-                constraints_df_train.loc[train_percentile_indic, 'max_value'] = \
-                    (y_train[train_percentile_indic] +
-                     abs(y_train[train_percentile_indic] * self.constraint_interval_size))
-                constraints_df_test.loc[test_percentile_indic, 'max_value'] = \
-                    (y_test[test_percentile_indic] +
-                     abs(y_test[test_percentile_indic] * self.constraint_interval_size))
-
         # updating the constraints object with the most important subject - the constraints
         self.constraints_df_train = constraints_df_train
-        #self.constraints_df_test = constraints_df_test
         self.is_constrainted = ~constraints_df_train.apply(lambda x: x['min_value'] == float("-inf")
                                                                  and x['max_value'] == float("+inf"), axis=1)
         self.satisfaction_history = pd.DataFrame(data=True,

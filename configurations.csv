@@ -1,2 +1,2 @@
 index,dataset,constraint_seed,percentile_threshold,constraint_interval_size,test_percent,n_estimators,max_depth,min_samples_split,learning_rate,loss,constraints_eta,constraints_gamma,constraint_early_stopping,gbt_seed
-309,Intel_CHT_data,123,0.95,0.1,0.3,1000,3,2,0.01,ls,0.02,50,FALSE,13
+402,kc_house,123,0.9,0.0001,0.3,1000,3,2,0.01,ls,0.02,50,FALSE,13
