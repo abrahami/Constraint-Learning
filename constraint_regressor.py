@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import scipy as sc
+import sys
 from numpy.random import mtrand
 from sklearn.metrics import mean_squared_error
+from ast import literal_eval
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -69,7 +71,7 @@ class ConstraintRegressor(object):
         self.percentile_threshold = cv_params['percentile_threshold']
         self.constraint_interval_size = cv_params['constraint_interval_size']
         self.constraint_early_stopping = constraint_early_stopping
-        self.dataset = dataset
+        self.dataset = str(dataset)
         self.test_percent = test_percent
         self.seed = seed
         self.n_estimators = gbt_params['n_estimators']
@@ -218,85 +220,106 @@ class ConstraintRegressor(object):
         :return: dictionary with 3 values - train data-set, test data-set and the constraints matrix
         """
 
+        # all cases when the dataset name is given explicitly (e.g. "boston"). If it is not given, we will try to find
+        # the data in the 'data_path' folder under the name "data.csv" and will take all columns as X and the last as y
         if self.dataset == "boston":
             boston = pd.read_csv(data_path + "\\boston_data\\boston_house_prices.csv")
             X_data = boston.iloc[:, 0:12].copy()
             y_data = boston.iloc[:, 13].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "diabetes":
+        elif self.dataset == "diabetes":
             data = pd.read_csv(data_path + "\\diabetes\\diabetes_data.csv")
             X_data = data.iloc[:, 0:8].copy()
             y_data = data.iloc[:, 9].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "news":
+        elif self.dataset == "news":
             data = pd.read_csv(data_path + "\\news_data\\OnlineNewsPopularity.csv")
             X_data = data.iloc[:, 1:59].copy()
             y_data = data.iloc[:, 60].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "ailerons":
+        elif self.dataset == "ailerons":
             data = pd.read_csv(data_path + "\\ailerons_data\\ailerons.csv")
             X_data = data.iloc[:, 0:39].copy()
             y_data = data.iloc[:, 40].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "kc_house":
+        elif self.dataset == "kc_house":
             data = pd.read_csv(data_path + "\\kingCountryHouses_data\\kc_house_data.csv")
             X_data = data.iloc[:, 2:19].copy()
             y_data = data.iloc[:, 20].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "compactiv_data":
+        elif self.dataset == "compactiv_data":
             data = pd.read_csv(data_path + "\\\compactiv_data\\compactiv_data.csv")
             X_data = data.iloc[:, 0:20].copy()
             y_data = data.iloc[:, 21].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "bikeSharing_data":
+        elif self.dataset == "bikeSharing_data":
             data = pd.read_csv(data_path + "\\bikeSharing_data\\bikeSharing.csv")
             X_data = data.iloc[:, 1:14].copy()
             y_data = data.iloc[:, 15].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "CTSlices_data":
+        elif self.dataset == "CTSlices_data":
             data = pd.read_csv(data_path + "\\CTSlices_data\\slice_localization_data.csv")
             X_data = data.iloc[:, 0:384].copy()
             y_data = data.iloc[:, 385].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "Intel_CHT_data":
+        elif self.dataset == "Intel_CHT_data":
             data = pd.read_csv(data_path + "\\CHT_D_step\\CHT_data.csv")
             X_data = data.iloc[:, 0:812].copy()
             y_data = data.iloc[:, 813].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "parkinson_updrs":
+        elif self.dataset == "parkinson_updrs":
             data = pd.read_csv(data_path + "\\parkinson_updrs\\parkinsons_data.csv")
             X_data = data.iloc[:, 0:20].copy()
             y_data = data.iloc[:, 20].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "parkinson_mpower":
+        elif self.dataset == "parkinson_mpower":
             data = pd.read_csv(data_path + "\\parkinson_mpower\\mpower_data.csv")
             X_data = data.iloc[:, 1:94].copy()
             y_data = data.iloc[:, 94].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "flights":
+        elif self.dataset == "flights":
             data = pd.read_csv(data_path + "\\flights\\Boeing-unNorm_Edan.csv")
             X_data = data.iloc[:, 2:37].copy()
             y_data = data.iloc[:, 1].copy()
             y_data = np.asarray(y_data)
 
-        if self.dataset == "Intel_BI_SKL_22":
+        elif self.dataset == "Intel_BI_SKL_22":
             data = pd.read_csv(data_path + "\\BI_SKL_22\\BI_SKL_ready_for_modeling.csv")
             # taking only the first 100 features (business limits)
             X_data = data.iloc[:, 0:100].copy()
             y_data = data.iloc[:, 500].copy()
             y_data = np.asarray(y_data)
 
+        elif self.dataset == "data" or self.dataset == 'nan':
+            # case the data.csv file doesn't exist, we will raise an exception
+            try:
+                data = pd.read_csv(data_path + "\\data.csv")
+            except IOError as e:
+                print "Problem occurred along loading the data, {}".format(e)
+                sys.exit(1)
+            data_size = data.shape
+            X_data = data.iloc[:, 0:data_size[1]-1].copy()
+            y_data = data.iloc[:, -1].copy()
+            y_data = np.asarray(y_data)
+        else:
+            raise IOError("The dataset you specified is not supported in this script. You should provide one out of "
+                          "the following datasets: 'boston', 'diabetes', 'news', 'ailerons', 'kc_house', "
+                          "'compactiv_data', 'bikeSharing_data', 'CTSlices_data', 'Intel_CHT_data', "
+                          "'parkinson_updrs', 'parkinson_mpower', 'flights', 'Intel_BI_SKL_22'. \n"
+                          "Another option is to provide your own dataset, it should be named as 'data.csv' and be "
+                          "placed in the folder you specified in 'data_path' field under the 'setup_file.json' file")
+            sys.exit(1)
         # generating the constraint matrix
         constraints_df = self.set_constraints_matrix(y=y_data)
         # separation the train/test (also the constraint DF)
@@ -327,6 +350,57 @@ class ConstraintRegressor(object):
                  "y_test": y_test,
                  "constraints_df_train": constraints_df_train,
                  "constraints_df_test": constraints_df_test})
+
+    @staticmethod
+    def translate_constraints_params(cur_config_dict):
+        '''
+        assigns values to 'eta' and 'gamma' parameters, according to the configurations got as input.
+        These two parameters can be either a simple number (e.g. 2.4) or a list of numbers (e.g. [2, 4, 5.2]).
+        Purpose of this function is just to translate the given input into a number or a list to both eta and gamma
+        :param cur_config_dict: dictionary
+            the input dictionary, where two keys of this dictionary are the 'constraints_eta' and 'constraints_gamma'
+            indeed, one (or both) of them can be none, and then the defualt values are assigned
+        :return: tuple
+            two values tuple - the eta parameter and the gamma parameter. Each of them can be a list of values
+        '''
+        eta_input = cur_config_dict['constraints_eta']
+        gamma_input = cur_config_dict['constraints_gamma']
+        eta = None
+        gamma = None
+
+        # case eta is a simple number (e.g. 5.0) or nan
+        if type(eta_input) is not str:
+            # case eta input is nan, it will get the default value (0.1)
+            if np.isnan(eta_input):
+                eta = 0.1
+            elif np.issubdtype(eta_input, int) or np.issubdtype(eta_input, float):
+                eta = eta_input
+        # case it is a string, should be in the format of a list
+        else:
+            try:
+                eta = literal_eval(eta_input)
+            except ValueError as e:
+                print "Problem occurred along translating the 'eta' parameter into a value, it should be either a" \
+                      "number of a list like (e.g. '[0.1, 0.2]'"
+                sys.exit(1)
+
+        # doing the same process for gamma input param
+        # case gamma is a simple number (e.g. 5.0)
+        if type(gamma_input) is not str:
+            # case gamma input is nan, it will get the default value (1.0)
+            if np.isnan(gamma_input):
+                gamma = 1.0
+            elif np.issubdtype(gamma_input, int) or np.issubdtype(gamma_input, float):
+                gamma = gamma_input
+        # case it is a string
+        else:
+            try:
+                gamma = literal_eval(gamma_input)
+            except ValueError as e:
+                print "Problem occurred along translating the 'gamma' parameter into a value, it should be either a" \
+                      "number of a list like (e.g. '[0.1, 0.2]')"
+                sys.exit(1)
+        return eta, gamma
 
     @staticmethod
     def histogram_plot(constraints_df, prediction, saving_path, header=None):
