@@ -188,21 +188,21 @@ class ConstraintRegressor(object):
             upper_percentile = np.percentile(a=y, q=self.percentile_threshold * 100)
             percentile_indic = (y >= upper_percentile)
 
-        # THIRD STEP - generating the min value constraints (note that up to now we have only defined the indicators)
+        # THIRD STEP - generating the max value constraints (note that up to now we have only defined the indicators)
+        constraints_df.loc[percentile_indic, 'max_value'] = \
+            (y[percentile_indic] + abs(y[percentile_indic] * self.constraint_interval_size))
+
+        # FOURTH STEP - generating the min value constraints
         # parkinson_mpower dataset is special, so we'll generate a specific (min_value) constraint to this one
         if self.dataset == "parkinson_mpower":
             constraints_df.loc[percentile_indic, 'min_value'] = 0
-
-        # min value constraint will be generated to all datasets
+        # these 3 datasets have one sides constraint only, so the min value is the original y value of each observation
+        elif self.dataset in ["Intel_CHT_data", "Intel_BI_SKL_22", "kc_house"]:
+            constraints_df.loc[percentile_indic, 'min_value'] = y[percentile_indic]
+        # all other datasets have 'regular' minimum value
         else:
             constraints_df.loc[percentile_indic, 'min_value'] = \
                 (y[percentile_indic] - abs(y[percentile_indic] * self.constraint_interval_size))
-
-        # FOURTH STEP - generating the max value constraints
-        # max value constraint will not be generated to some of the cases, due to business reasons, it will stay as inf
-        if self.dataset not in ["parkinson_mpower", "Intel_CHT_data", "Intel_BI_SKL_22", "kc_house"]:
-            constraints_df.loc[percentile_indic, 'max_value'] = \
-                (y[percentile_indic] + abs(y[percentile_indic] * self.constraint_interval_size))
         # case verbose is true, we'll print a summary of the procedure
         if verbose:
             not_constrainted = np.sum(constraints_df.apply(lambda x: x['min_value'] == float("-inf")
