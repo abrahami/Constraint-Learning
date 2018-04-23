@@ -4,7 +4,7 @@
 # MSE = mean squared error
 # CMSE = constraints mean squared error
 
-from sklearn import ensemble_Avrahami_thesis
+from sklearn import constraints_ensamble
 import pandas as pd
 from datetime import datetime
 from ast import literal_eval
@@ -91,7 +91,7 @@ for j in range(config_df.shape[0]):
                                                          'early_stopping']).transpose()
         df_to_save.to_excel(excel_writer, sheet_name='configurations', index=False)
         excel_writer.save
-    clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
+    clf = constraints_ensamble.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
 
     # case we want to save the results, we are creating a data-frame which will hold the saved data at the end
     if save_row_level_predictions:
@@ -258,7 +258,7 @@ for j in range(config_df.shape[0]):
     # (weights change per loop)
     if run_option_d:
         start_time = datetime.now()
-        clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
+        clf = constraints_ensamble.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
         if type(constraint_reg_obj.constraints_eta) is list:
             etas = constraint_reg_obj.constraints_eta
             dynamic_weight_loop_results = constraint_reg_obj.dynamic_weight_loop(data=data, clf=clf, etas=etas)
@@ -312,7 +312,7 @@ for j in range(config_df.shape[0]):
     if run_option_e:
         start_time = datetime.now()
         constraint_reg_obj.loss = "constraints"
-        clf = ensemble_Avrahami_thesis.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
+        clf = constraints_ensamble.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
 
         if type(constraint_reg_obj.constraints_gamma) is list:
             gammas = constraint_reg_obj.constraints_gamma
@@ -365,5 +365,6 @@ for j in range(config_df.shape[0]):
         row_level_df_resuls.to_csv(path_or_buf=results_loc + "\\row_level_predictions_config_no_" +
                                                str(cur_config['index'])+".csv")
 # delete the csv writer, as we have just finished a loop over all options
-del writer
-del excel_writer
+if save_evaluation_measures:
+    del writer
+    del excel_writer

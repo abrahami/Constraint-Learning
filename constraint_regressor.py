@@ -175,7 +175,7 @@ class ConstraintRegressor(object):
         # SECOND STEP - calculating an indicator vector with the places which are needed to be constrained
         # By default, the most upper values of the y varailbe will be constrained.
         # The 'flights' dataset is special, as we want to restrict the lower values of this data and not the upper ones
-        if self.dataset == "flights":
+        if self.dataset == "flights":#or self.dataset=="kc_house":
             lower_percentile = np.percentile(a=y, q=(1 - self.percentile_threshold) * 100)
             percentile_indic = ((y <= lower_percentile) & (y != 0))
 
@@ -373,7 +373,7 @@ class ConstraintRegressor(object):
             # case eta input is nan, it will get the default value (0.1)
             if np.isnan(eta_input):
                 eta = 0.1
-            elif np.issubdtype(eta_input, int) or np.issubdtype(eta_input, float):
+            elif np.issubdtype(eta_input, np.signedinteger) or np.issubdtype(eta_input, np.floating):
                 eta = eta_input
         # case it is a string, should be in the format of a list
         else:
@@ -390,7 +390,7 @@ class ConstraintRegressor(object):
             # case gamma input is nan, it will get the default value (1.0)
             if np.isnan(gamma_input):
                 gamma = 1.0
-            elif np.issubdtype(gamma_input, int) or np.issubdtype(gamma_input, float):
+            elif np.issubdtype(gamma_input, np.signedinteger) or np.issubdtype(gamma_input, np.floating):
                 gamma = gamma_input
         # case it is a string
         else:

@@ -1,2 +1,2 @@
 index,dataset,constraint_seed,percentile_threshold,constraint_interval_size,test_percent,n_estimators,max_depth,min_samples_split,learning_rate,loss,constraints_eta,constraints_gamma,constraint_early_stopping,gbt_seed
-415,kc_house,123,0.8,0.3,0.3,1000,5,2,0.05,ls,"[0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.5]","[1, 2, 3, 5, 10, 50, 100, 500, 1000]",FALSE,13
+550,kc_house,123,0.8,0.3,0.3,1000,5,2,0.05,ls,0.02,5,FALSE,13
