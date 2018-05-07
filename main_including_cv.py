@@ -80,17 +80,21 @@ for j in range(config_df.shape[0]):
             writer.writerow(['time', 'index', 'Dataset', 'percentile_threshold', 'constraint_interval_size',
                               'n_estimators', 'max_depth', 'min_samples_split', 'learning_rate', 'loss',
                               'constraints_eta', 'random_state', 'constraint_gamma', 'early_stopping', 'Algo_type',
-                              'train / test', 'Duration(sec)', 'Constraints_count', 'CMSE', 'MSE', 'CER'])
-        excel_writer = pd.ExcelWriter(results_loc + '\\looping_results_index_' +
-                                      str(cur_config['index']) + '.xlsx')
-        # adding a sheet to the excel, with all configurations (this is the meta-data sheet
-        df_to_save = pd.DataFrame(config_details, index=['time', 'index', 'Dataset', 'percentile_threshold',
-                                                         'constraint_interval_size', 'n_estimators', 'max_depth',
-                                                         'min_samples_split', 'learning_rate', 'loss',
-                                                         'constraints_eta', 'random_state', 'constraint_gamma',
-                                                         'early_stopping']).transpose()
-        df_to_save.to_excel(excel_writer, sheet_name='configurations', index=False)
-        excel_writer.save
+                              'train / test', 'Duration(sec)', 'Constraints_count', 'CMSE', 'MSE', 'CER', 'R_square'])
+        # only in case we are looping over few values in one of the relevant algorithms
+        # (e.g. looping over the eta param) - we need to create an excel file to be filled in later
+        if (type(constant_weight_values) is list and len(constant_weight_values) > 1) or \
+                type(constraint_reg_obj.constraints_eta) is list or type(constraint_reg_obj.constraints_gamma) is list:
+            excel_writer = pd.ExcelWriter(results_loc + '\\looping_results_index_' +
+                                          str(cur_config['index']) + '.xlsx')
+            # adding a sheet to the excel, with all configurations (this is the meta-data sheet
+            df_to_save = pd.DataFrame(config_details, index=['time', 'index', 'Dataset', 'percentile_threshold',
+                                                             'constraint_interval_size', 'n_estimators', 'max_depth',
+                                                             'min_samples_split', 'learning_rate', 'loss',
+                                                             'constraints_eta', 'random_state', 'constraint_gamma',
+                                                             'early_stopping']).transpose()
+            df_to_save.to_excel(excel_writer, sheet_name='configurations', index=False)
+            excel_writer.save
     clf = constraints_ensamble.GradientBoostingRegressor(constraint_obj=constraint_reg_obj)
 
     # case we want to save the results, we are creating a data-frame which will hold the saved data at the end
@@ -123,12 +127,14 @@ for j in range(config_df.shape[0]):
         if save_evaluation_measures:
             cur_train_full_log = copy.copy(config_details)
             cur_train_full_log.extend(("Option A - no constraints", "train", duration, cur_train_eval['n_constraints'],
-                                       cur_train_eval['CMSE'], cur_train_eval['MSE'], cur_train_eval['CER']))
+                                       cur_train_eval['CMSE'], cur_train_eval['MSE'], cur_train_eval['CER'],
+                                       cur_train_eval["R_square"]))
             writer.writerow(cur_train_full_log)
 
             cur_test_full_log = copy.copy(config_details)
             cur_test_full_log.extend(("Option A - no constraints", "test", duration, cur_test_eval['n_constraints'],
-                                      cur_test_eval['CMSE'], cur_test_eval['MSE'], cur_test_eval['CER']))
+                                      cur_test_eval['CMSE'], cur_test_eval['MSE'], cur_test_eval['CER'],
+                                      cur_train_eval["R_square"]))
             writer.writerow(cur_test_full_log)
         # case we want to save prediction of each observation
         if save_row_level_predictions:
@@ -183,12 +189,12 @@ for j in range(config_df.shape[0]):
                 cur_train_full_log = copy.copy(config_details)
                 cur_train_full_log.extend(("Option B - global weight to constrainted", "train", duration,
                                            cur_train_eval['n_constraints'], cur_train_eval['CMSE'],
-                                           cur_train_eval['MSE'], cur_train_eval['CER']))
+                                           cur_train_eval['MSE'], cur_train_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_train_full_log)
                 cur_test_full_log = copy.copy(config_details)
                 cur_test_full_log.extend(("Option B - global weight to constrainted", "test", duration,
                                           cur_test_eval['n_constraints'], cur_test_eval['CMSE'], cur_test_eval['MSE'],
-                                          cur_test_eval['CER']))
+                                          cur_test_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_test_full_log)
 
             # case we want to save prediction of each observation
@@ -232,13 +238,13 @@ for j in range(config_df.shape[0]):
                 cur_train_full_log = copy.copy(config_details)
                 cur_train_full_log.extend(("Option C - smart weight to constrainted", "train", duration,
                                            cur_train_eval['n_constraints'], cur_train_eval['CMSE'],
-                                           cur_train_eval['MSE'], cur_train_eval['CER']))
+                                           cur_train_eval['MSE'], cur_train_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_train_full_log)
 
                 cur_test_full_log = copy.copy(config_details)
                 cur_test_full_log.extend(("Option C - smart weight to constrainted", "test", duration,
                                           cur_test_eval['n_constraints'], cur_test_eval['CMSE'], cur_test_eval['MSE'],
-                                          cur_test_eval['CER']))
+                                          cur_test_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_test_full_log)
             # case we want to save prediction of each observation
             if save_row_level_predictions:
@@ -286,13 +292,13 @@ for j in range(config_df.shape[0]):
                 cur_train_full_log = copy.copy(config_details)
                 cur_train_full_log.extend(("Option D - our 1st algo - dynamic weight", "train", duration,
                                            cur_train_eval['n_constraints'], cur_train_eval['CMSE'],
-                                           cur_train_eval['MSE'], cur_train_eval['CER']))
+                                           cur_train_eval['MSE'], cur_train_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_train_full_log)
 
                 cur_test_full_log = copy.copy(config_details)
                 cur_test_full_log.extend(("Option D - our 1st algo - dynamic weight", "test", duration,
                                           cur_test_eval['n_constraints'], cur_test_eval['CMSE'], cur_test_eval['MSE'],
-                                          cur_test_eval['CER']))
+                                          cur_test_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_test_full_log)
             # case we want to save prediction of each observation
             if save_row_level_predictions:
@@ -337,13 +343,12 @@ for j in range(config_df.shape[0]):
                 cur_train_full_log = copy.copy(config_details)
                 cur_train_full_log.extend(("Option E - our 2nd algo - new loss function", "train", duration,
                                            cur_train_eval['n_constraints'], cur_train_eval['CMSE'],
-                                           cur_train_eval['MSE'],
-                                           cur_train_eval['CER']))
+                                           cur_train_eval['MSE'], cur_train_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_train_full_log)
                 cur_test_full_log = copy.copy(config_details)
                 cur_test_full_log.extend(("Option E - our 2nd algo - new loss function", "test", duration,
                                           cur_test_eval['n_constraints'], cur_test_eval['CMSE'], cur_test_eval['MSE'],
-                                          cur_test_eval['CER']))
+                                          cur_test_eval['CER'], cur_train_eval["R_square"]))
                 writer.writerow(cur_test_full_log)
             # case we want to save prediction of each observation
             if save_row_level_predictions:
@@ -365,6 +370,7 @@ for j in range(config_df.shape[0]):
         row_level_df_resuls.to_csv(path_or_buf=results_loc + "\\row_level_predictions_config_no_" +
                                                str(cur_config['index'])+".csv")
 # delete the csv writer, as we have just finished a loop over all options
-if save_evaluation_measures:
+if 'writer' in locals():
     del writer
+if 'excel_writer' in locals():
     del excel_writer

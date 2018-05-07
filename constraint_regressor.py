@@ -3,7 +3,7 @@ import numpy as np
 import scipy as sc
 import sys
 from numpy.random import mtrand
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score
 from ast import literal_eval
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -554,7 +554,9 @@ class ConstraintRegressor(object):
         :param constraints_df: matrix with the constraints. This matrix is created in the 'load_dataset' and it contains
           2 columns (max/min value) to each observation
         :return: dictionary with all measures:
-                    n_constraints - # of relevant constraints (those which are not -inf < observation_value < inf)
+                    n_constraints = # of relevant constraints (those which are not -inf < observation_value < inf)
+                    r_squre = r^2 by definition (https://en.wikipedia.org/wiki/Coefficient_of_determination)
+                            which is 1-ss_reg/ss_tot
                     MSE = mean squared error
                     CER = constraints error rate (% of constraints missed)
                     CMSE = constraints mean squared error. Average is over the # of constraints and the sum of error is
@@ -572,6 +574,11 @@ class ConstraintRegressor(object):
         constraints_with_pred['pred'] = y_predicted
         constraints_with_pred['true'] = y_true
 
+        # calculation of the R^2
+        #ss_tot = np.sum(np.square(constraints_with_pred['pred'] - np.mean(constraints_with_pred['true'])))
+        #ss_reg = np.sum(np.square(constraints_with_pred['pred'] - constraints_with_pred['true']))
+        #r_square = 1-(ss_reg/ss_tot)
+        r_square = r2_score(y_true=constraints_with_pred['true'], y_pred=constraints_with_pred['pred'])
         illogical_constraints = np.sum(constraints_with_pred.apply(lambda x: (x['min_value'] > x['true'])
                                                                              or (x['max_value'] < x['true']), axis=1))
         if illogical_constraints:
@@ -590,7 +597,7 @@ class ConstraintRegressor(object):
                                                   max(x['pred'] - x['max_value'], 0) ** 2,
                                         axis=1))
 
-        return {'n_constraints': n_constraints, 'MSE': mse,
+        return {'n_constraints': n_constraints, 'MSE': mse, "R_square": r_square,
                 'CER': constraints_misses / n_constraints, 'CMSE': sum_constraints_violation / n_constraints}
 
     def general_weight_loop(self, data, clf, weights):
@@ -600,8 +607,8 @@ class ConstraintRegressor(object):
         y_test = data["y_test"]
         constraints_df_test = data["constraints_df_test"]
         results_df = pd.DataFrame(index=weights,
-                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train',
-                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test'],
+                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train', 'R_square_train',
+                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test', 'R_square_test'],
                                   dtype='float')
         for cur_weight in weights:
             print "\nStarted option B with weight = {}".format(str(cur_weight))
@@ -614,10 +621,10 @@ class ConstraintRegressor(object):
             cur_prediction = clf.predict(X_test)
             cur_eval_test = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
                                                                 constraints_df=constraints_df_test)
-            results_df.loc[cur_weight, :] = [cur_eval_train['n_constraints'],
-                                             cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
-                                             cur_eval_test['n_constraints'],
-                                             cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+            results_df.loc[cur_weight, :] = [cur_eval_train['n_constraints'], cur_eval_train['CMSE'],
+                                             cur_eval_train['MSE'], cur_eval_train['CER'], cur_eval_train["R_square"],
+                                             cur_eval_test['n_constraints'], cur_eval_test['CMSE'],
+                                             cur_eval_test['MSE'], cur_eval_test['CER'], cur_eval_test["R_square"]]
             print "Results over the test data set current weight are: " + str(cur_eval_test)
         return results_df
 
@@ -628,8 +635,8 @@ class ConstraintRegressor(object):
         y_test = data["y_test"]
         constraints_df_test = data["constraints_df_test"]
         results_df = pd.DataFrame(index=etas,
-                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train',
-                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test'],
+                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train', 'R_square_train',
+                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test', 'R_square_test'],
                                   dtype='float')
         for cur_eta in etas:
             print "\nStarted option D with eta = {}".format(str(cur_eta))
@@ -647,10 +654,10 @@ class ConstraintRegressor(object):
             cur_prediction = clf.predict(X_test)
             cur_eval_test = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
                                                                 constraints_df=constraints_df_test)
-            results_df.loc[cur_eta, :] = [cur_eval_train['n_constraints'],
-                                          cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
-                                          cur_eval_test['n_constraints'],
-                                          cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+            results_df.loc[cur_eta, :] = [cur_eval_train['n_constraints'], cur_eval_train['CMSE'],
+                                          cur_eval_train['MSE'], cur_eval_train['CER'], cur_eval_train['R_square'],
+                                          cur_eval_test['n_constraints'], cur_eval_test['CMSE'],
+                                          cur_eval_test['MSE'], cur_eval_test['CER'], cur_eval_test['R_square']]
             print "Results over the test data set current eta are: " + str(cur_eval_test)
         return results_df
 
@@ -661,8 +668,8 @@ class ConstraintRegressor(object):
         y_test = data["y_test"]
         constraints_df_test = data["constraints_df_test"]
         results_df = pd.DataFrame(index=gammas,
-                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train',
-                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test'],
+                                  columns=['n_constraints_train', 'CMSE_train', 'MSE_train', 'CER_train', 'R_square_train',
+                                           'n_constraints_test', 'CMSE_test', 'MSE_test', 'CER_test', 'R_square_test'],
                                   dtype='float')
         for cur_gamma in gammas:
             print "\nStarted option E with gamma = {}".format(str(cur_gamma))
@@ -677,9 +684,9 @@ class ConstraintRegressor(object):
             cur_prediction = clf.predict(X_test)
             cur_eval_test = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
                                                                 constraints_df=constraints_df_test)
-            results_df.loc[cur_gamma, :] = [cur_eval_train['n_constraints'],
-                                            cur_eval_train['CMSE'], cur_eval_train['MSE'], cur_eval_train['CER'],
-                                            cur_eval_test['n_constraints'],
-                                            cur_eval_test['CMSE'], cur_eval_test['MSE'], cur_eval_test['CER']]
+            results_df.loc[cur_gamma, :] = [cur_eval_train['n_constraints'], cur_eval_train['CMSE'],
+                                            cur_eval_train['MSE'], cur_eval_train['CER'], cur_eval_train['R_square'],
+                                            cur_eval_test['n_constraints'], cur_eval_test['CMSE'],
+                                            cur_eval_test['MSE'], cur_eval_test['CER'], cur_eval_test['R_square']]
             print "Results over the test data set current gamma are: " + str(cur_eval_test)
         return results_df
