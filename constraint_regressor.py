@@ -7,6 +7,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from ast import literal_eval
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.model_selection import KFold
 
 __author__ = 'abrahami'
 
@@ -59,7 +60,7 @@ class ConstraintRegressor(object):
     """
 
     def __init__(self, cv_params=None, gbt_params=None, constraints_params=None, constraint_early_stopping=False,
-                 dataset="boston", test_percent=0.3, seed=123):
+                 dataset="boston", test_percent=0.3, seed=123, cv_folds_size=5):
 
         if cv_params is None:
             cv_params = {'percentile_threshold': 0.9, 'constraint_interval_size': 0.05}
@@ -84,6 +85,7 @@ class ConstraintRegressor(object):
         self.is_constrainted = None
         self.satisfaction_history = None
         self.constraints_df_train = None
+        self.cv_folds_size = cv_folds_size
 
     def still_candidate(self, index, loop_number):
         """
@@ -212,7 +214,7 @@ class ConstraintRegressor(object):
 
         return constraints_df
 
-    def load_dataset(self, data_path):
+    def load_dataset(self, data_path, which_fold):
         """
         load_data-set function gets a string as input and creates a data-set to work with along the algorithm
         :param data_path: string
@@ -324,17 +326,27 @@ class ConstraintRegressor(object):
         constraints_df = self.set_constraints_matrix(y=y_data)
         # separation the train/test (also the constraint DF)
         rows_cnt = X_data.shape[0]
-        # random.seed(constraints_generator_params['seed'])
+
+        cv_k_fold_obj = KFold(n_splits=self.cv_folds_size, shuffle=True, random_state=self.seed)
+        for cv_idx, (train_index, test_index) in enumerate(cv_k_fold_obj.split(X_data)):
+            if cv_idx != which_fold:
+                continue
+            X_train, X_test = (X_data.iloc[train_index].copy()).reset_index(), (X_data.iloc[test_index].copy()).reset_index()
+            y_train, y_test = y_data[train_index], y_data[test_index]
+            constraints_df_train = constraints_df.iloc[train_index].copy().reset_index()
+            constraints_df_test = constraints_df.iloc[test_index].copy().reset_index()
+        # old way of creating train/test split
+
+        '''
         rand_object = mtrand.RandomState(seed=self.seed)
         msk = rand_object.rand(rows_cnt) < self.test_percent
-
         X_train = (X_data[~msk].copy()).reset_index()
         y_train = y_data[~msk].copy()
         constraints_df_train = constraints_df[~msk].copy().reset_index()
         X_test = X_data[msk].copy().reset_index()
         y_test = y_data[msk].copy()
         constraints_df_test = constraints_df[msk].copy().reset_index()
-
+        '''
         # updating the constraints object with the most important subject - the constraints
         self.constraints_df_train = constraints_df_train
         self.is_constrainted = ~constraints_df_train.apply(lambda x: x['min_value'] == float("-inf")

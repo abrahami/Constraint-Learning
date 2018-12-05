@@ -1,2 +1,6 @@
 configurations.csv
 setup_file.json
+*.iml
+*.iml
+*.xml
+*.xml

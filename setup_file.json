@@ -1,6 +1,6 @@
 {
 	"paths": {
-		"configuration": "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis\\python_code\\GIT\\Constraint-Learning\\configurations.csv",
+		"configuration": "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis\\python_code\\Constraint-Learning\\configurations.csv",
 		"data": "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis\\data_sets",
 		"results": "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis\\Results"
 	},
