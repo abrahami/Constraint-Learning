@@ -20,7 +20,7 @@ setup_details = json.load(open("setup_file.json"))
 config_file_loc = setup_details['paths']['configuration']
 data_loc = setup_details['paths']['data']
 results_loc = setup_details['paths']['results']
-
+cv_folds_amount = int(setup_details['cv']['folds'])
 ###############################################################################
 # reading configuration from a file with all config needed to be run
 config_df = pd.read_csv(config_file_loc)
@@ -29,16 +29,16 @@ save_evaluation_measures = literal_eval(setup_details["saving_options"]["save_ev
 save_plots = literal_eval(setup_details["saving_options"]["save_plots"])
 run_benchmarks = literal_eval(setup_details["benchmarks"]["run_benchmarks"])
 constant_weight_values = literal_eval(setup_details["benchmarks"]["constant_weight_values"])
-cv_folds_amount = 5
 
+normalize_y = False
 if run_benchmarks:
     run_option_a = True
     run_option_b = True
-    run_option_c = True
+    run_option_c = False
 else:
     run_option_a = run_option_b = run_option_c = False
-run_option_d = True
-run_option_e = True
+run_option_d = False
+run_option_e = False
 
 # Loop over all configurations in the config file (.csv)
 for j in range(config_df.shape[0]):
@@ -47,7 +47,7 @@ for j in range(config_df.shape[0]):
     print "Current configurations are as follow: \n" + str(cur_config)
 
     for cur_fold in range(cv_folds_amount):
-        print "\nStarting cv loop #{}, out of 5\n".format(cur_fold)
+        print "\nStarting cv loop #{}, out of {}\n".format(cur_fold, cv_folds_amount)
         constraint_reg_obj = ConstraintRegressor(cv_params={'percentile_threshold': cur_config['percentile_threshold'],
                                                             'constraint_interval_size': cur_config['constraint_interval_size']},
                                                  gbt_params={'n_estimators': cur_config['n_estimators'],
@@ -100,7 +100,7 @@ for j in range(config_df.shape[0]):
                                                                  'constraints_eta', 'random_state', 'constraint_gamma',
                                                                  'early_stopping']).transpose()
                 df_to_save.to_excel(excel_writer, sheet_name='configurations', index=False)
-                excel_writer.save
+                #excel_writer.save()
         clf = constraints_ensamble.GradientBoostingRegressor(constraint_obj=constraint_reg_obj,
                                                              random_state=constraint_reg_obj.seed)
 
@@ -164,7 +164,7 @@ for j in range(config_df.shape[0]):
                 general_weight_loop_results = constraint_reg_obj.general_weight_loop(data=data, clf=clf,
                                                                                      weights=constant_weight_values)
                 general_weight_loop_results.to_excel(excel_writer, sheet_name='general_weight_loop')
-                excel_writer.save
+                #excel_writer.save()
 
             # single run without running over few initial weights (this is in case the 'constant_weight_values' param was
             # a list with a single value or just an integer/float (and not a list at all)
@@ -278,7 +278,7 @@ for j in range(config_df.shape[0]):
                 etas = constraint_reg_obj.constraints_eta
                 dynamic_weight_loop_results = constraint_reg_obj.dynamic_weight_loop(data=data, clf=clf, etas=etas)
                 dynamic_weight_loop_results.to_excel(excel_writer, sheet_name='dynamic_weight_loop')
-                excel_writer.save
+                #excel_writer.save()
             # single run without running over few etas
             else:
                 sample_weight = ConstraintRegressor.assign_weights(y_true=y_train,
@@ -333,7 +333,7 @@ for j in range(config_df.shape[0]):
                 gammas = constraint_reg_obj.constraints_gamma
                 new_gradient_loop_results = constraint_reg_obj.new_gradinet_loop(data=data, clf=clf, gammas=gammas)
                 new_gradient_loop_results.to_excel(excel_writer, sheet_name='new_gradient_loop')
-                excel_writer.save
+                excel_writer.save()
             else:
                 clf.fit(X_train, y_train, weights_based_constraints_sol=False)
                 duration = (datetime.now() - start_time).seconds

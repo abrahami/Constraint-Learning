@@ -11,6 +11,9 @@
 	},
 	"benchmarks": {
 		"run_benchmarks": "True",
-		"constant_weight_values": "5"
+		"constant_weight_values": "100"
+	},
+	"cv":{
+		"folds": "5"
 	}
 }

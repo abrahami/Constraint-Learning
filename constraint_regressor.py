@@ -8,9 +8,11 @@ from ast import literal_eval
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
 
 __author__ = 'abrahami'
 
+normalize_y = True
 
 class ConstraintRegressor(object):
     """
@@ -322,6 +324,11 @@ class ConstraintRegressor(object):
                           "Another option is to provide your own dataset, it should be named as 'data.csv' and be "
                           "placed in the folder you specified in 'data_path' field under the 'setup_file.json' file")
             sys.exit(1)
+        # case we wish to normalize the y feature
+        if normalize_y:
+            scaler = StandardScaler()
+            y_data = scaler.fit_transform(pd.DataFrame(y_data))[:, 0]
+
         # generating the constraint matrix
         constraints_df = self.set_constraints_matrix(y=y_data)
         # separation the train/test (also the constraint DF)
