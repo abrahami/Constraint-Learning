@@ -5,13 +5,13 @@
 		"results": "C:\\Users\\abrahami\\Documents\\Private\\Uni\\BGU\\Thesis\\Results"
 	},
 	"saving_options": {
-		"save_evaluation_measures": "False",
+		"save_evaluation_measures": "True",
 		"save_row_level_predictions": "False",
 		"save_plots": "False"
 	},
 	"benchmarks": {
 		"run_benchmarks": "True",
-		"constant_weight_values": "100"
+		"constant_weight_values": "5"
 	},
 	"cv":{
 		"folds": "5"

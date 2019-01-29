@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="17e4010f-fb2e-4c27-a347-6dccc03faff5" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/hypothesis_testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Constraint-Learning.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Constraint-Learning.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="17e4010f-fb2e-4c27-a347-6dccc03faff5" name="Default" comment="Adding hypothesis testing">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/configurations.csv" beforeDir="false" afterPath="$PROJECT_DIR$/configurations.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/constraint_regressor.py" beforeDir="false" afterPath="$PROJECT_DIR$/constraint_regressor.py" afterDir="false" />
@@ -19,69 +16,74 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/Constraint_Learning$hypothesis_testing.coverage" NAME="hypothesis_testing Coverage Results" MODIFIED="1545777298414" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Constraint_Learning$main_including_cv.coverage" NAME="main_including_cv Coverage Results" MODIFIED="1545679681194" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Constraint_Learning$main_including_cv.coverage" NAME="main_including_cv Coverage Results" MODIFIED="1548592158055" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_DATA_SOURCES" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+    <option name="HIDDEN_KINDS">
+      <set />
+    </option>
+    <expand />
+    <select />
   </component>
   <component name="FUSProjectUsageTrigger">
     <session id="-1533117979">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="5" />
+          <entry key="project.closed" value="7" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.open.time.12" value="2" />
           <entry key="project.open.time.14" value="1" />
+          <entry key="project.open.time.16" value="1" />
+          <entry key="project.open.time.17" value="1" />
           <entry key="project.open.time.2" value="1" />
           <entry key="project.open.time.24" value="1" />
           <entry key="project.open.time.27" value="1" />
-          <entry key="project.opened" value="7" />
+          <entry key="project.open.time.9" value="1" />
+          <entry key="project.opened" value="10" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="Python Console" value="397" />
-          <entry key="py" value="1797" />
-          <entry key="txt" value="131" />
+          <entry key="Python Console" value="840" />
+          <entry key="py" value="3290" />
+          <entry key="txt" value="157" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="PLAIN_TEXT" value="131" />
-          <entry key="Python" value="2194" />
+          <entry key="PLAIN_TEXT" value="157" />
+          <entry key="Python" value="4130" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="3" />
+          <entry key="py" value="5" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="3" />
+          <entry key="Python" value="5" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/constraint_regressor.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="13530">
-              <caret line="615" column="38" selection-start-line="615" selection-start-column="38" selection-end-line="615" selection-end-column="38" />
-              <folding>
-                <element signature="e#0#19#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main_including_cv.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="176">
-              <caret line="103" column="8" selection-start-line="103" selection-start-column="8" selection-end-line="103" selection-end-column="8" />
+            <state relative-caret-position="138">
+              <caret line="52" column="53" selection-start-line="52" selection-start-column="53" selection-end-line="52" selection-end-column="53" />
               <folding>
                 <element signature="e#138#178#0" expanded="true" />
               </folding>
@@ -90,10 +92,33 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/hypothesis_testing.py">
+        <entry file="file://C:/Anaconda2/Lib/site-packages/sklearn/constraints_ensamble/weight_boosting.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="684">
-              <caret line="182" column="34" selection-start-line="182" selection-start-column="34" selection-end-line="182" selection-end-column="34" />
+            <state relative-caret-position="277">
+              <caret line="34" column="16" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/constraint_regressor.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="213">
+              <caret line="336" column="57" selection-start-line="336" selection-start-column="44" selection-end-line="336" selection-end-column="57" />
+              <folding>
+                <element signature="e#0#19#0" expanded="true" />
+                <element signature="e#417#3186#1" />
+                <element signature="e#4701#5988#0" />
+                <element signature="e#6059#6846#0" />
+                <element signature="e#6923#12353#0" />
+                <element signature="e#20287#22746#0" />
+                <element signature="e#22852#26057#0" />
+                <element signature="e#26171#27571#0" />
+                <element signature="e#27679#30530#0" />
+                <element signature="e#34487#36550#0" />
+                <element signature="e#36612#38822#0" />
+                <element signature="e#38884#40864#0" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -109,10 +134,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>iterate_over_params</find>
-      <find>exce</find>
-      <find>data_path</find>
-      <find>data_loc</find>
       <find>ast</find>
       <find>assign_weights</find>
       <find>constraints_ensamble</find>
@@ -131,6 +152,18 @@
       <find>new_loss_function</find>
       <find>Weighted_GBT</find>
       <find>10</find>
+      <find>normalize_y</find>
+      <find>is_constrainted</find>
+      <find>copy</find>
+      <find>clf</find>
+      <find>self.is_constrainted</find>
+      <find>norma</find>
+      <find>active_sampling_bins</find>
+      <find>nor</find>
+      <find>setup</find>
+      <find>cv_folds_size</find>
+      <find>cv_folds_amount</find>
+      <find>run_active_sampling</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -139,8 +172,8 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/constraint_regressor.py" />
         <option value="$PROJECT_DIR$/hypothesis_testing.py" />
+        <option value="$PROJECT_DIR$/constraint_regressor.py" />
         <option value="$PROJECT_DIR$/main_including_cv.py" />
       </list>
     </option>
@@ -154,8 +187,8 @@
   <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-8" />
     <option name="y" value="-8" />
-    <option name="width" value="1696" />
-    <option name="height" value="1026" />
+    <option name="width" value="1936" />
+    <option name="height" value="1056" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -170,6 +203,11 @@
               <item name="Constraint-Learning" type="b2602c69:ProjectViewProjectNode" />
               <item name="Constraint-Learning" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="Constraint-Learning" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Constraint-Learning" type="462c0819:PsiDirectoryNode" />
+              <item name="constraints_ensamble" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -178,8 +216,13 @@
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../../../../SMG/SMG_git/SA_Social_Shared/social_shared/ds/snorkel" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.symlinks" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.date" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../PhD/reddit_canvas/reddit_proj_with_yalla_cluster" />
+    <property name="settings.editor.selected.configurable" value="ics" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -193,7 +236,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.hypothesis_testing">
+  <component name="RunManager" selected="Python.main_including_cv">
     <configuration default="true" type="tests" factoryName="Attests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -283,8 +326,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.hypothesis_testing" />
         <item itemvalue="Python.main_including_cv" />
+        <item itemvalue="Python.hypothesis_testing" />
         <item itemvalue="Python tests.Doctests in ConstraintRegressor" />
       </list>
     </recent_temporary>
@@ -328,7 +371,14 @@
       <option name="project" value="LOCAL" />
       <updated>1544039120056</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Adding hypothesis testing">
+      <created>1546898262270</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1546898262270</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -347,30 +397,29 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.0565032" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.084754795" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3286334" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.39154014" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.35791758" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.45336226" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.38828632" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3295583" />
       <window_info anchor="bottom" id="Version Control" order="7" weight="0.3295583" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.329718" />
-      <window_info anchor="bottom" id="Python Console" order="9" weight="0.5791757" />
+      <window_info anchor="bottom" id="Python Console" order="9" weight="0.23210412" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="bottom" id="Docker" order="11" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="12" show_stripe_button="false" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Remote Host" order="3" />
+      <window_info anchor="right" id="Remote Host" order="3" weight="0.32995737" />
       <window_info anchor="right" id="SciView" order="4" weight="0.31130064" />
-      <window_info anchor="right" id="Database" order="5" />
+      <window_info anchor="right" id="Database" order="5" weight="0.32995737" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -384,20 +433,21 @@
     <MESSAGE value="Adding a new function, which handles the building of the constraint matrix" />
     <MESSAGE value="Small change to the configuration file" />
     <MESSAGE value="Changed the way CV is being done - not it is based on 5 folds CV and all folds results are saved to the results file" />
-    <option name="LAST_COMMIT_MESSAGE" value="Changed the way CV is being done - not it is based on 5 folds CV and all folds results are saved to the results file" />
+    <MESSAGE value="Adding hypothesis testing" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adding hypothesis testing" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main_including_cv.py</url>
-          <line>119</line>
-          <option name="timeStamp" value="16" />
+          <line>97</line>
+          <option name="timeStamp" value="22" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/main_including_cv.py</url>
-          <line>96</line>
-          <option name="timeStamp" value="22" />
+          <url>file://$PROJECT_DIR$/constraint_regressor.py</url>
+          <line>732</line>
+          <option name="timeStamp" value="28" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -460,25 +510,46 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/hypothesis_testing.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="684">
+        <state relative-caret-position="3982">
           <caret line="182" column="34" selection-start-line="182" selection-start-column="34" selection-end-line="182" selection-end-column="34" />
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/constraints_ensamble/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/constraint_regressor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="13530">
-          <caret line="615" column="38" selection-start-line="615" selection-start-column="38" selection-end-line="615" selection-end-column="38" />
+        <state relative-caret-position="213">
+          <caret line="336" column="57" selection-start-line="336" selection-start-column="44" selection-end-line="336" selection-end-column="57" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#417#3186#1" />
+            <element signature="e#4701#5988#0" />
+            <element signature="e#6059#6846#0" />
+            <element signature="e#6923#12353#0" />
+            <element signature="e#20287#22746#0" />
+            <element signature="e#22852#26057#0" />
+            <element signature="e#26171#27571#0" />
+            <element signature="e#27679#30530#0" />
+            <element signature="e#34487#36550#0" />
+            <element signature="e#36612#38822#0" />
+            <element signature="e#38884#40864#0" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Anaconda2/Lib/site-packages/sklearn/constraints_ensamble/weight_boosting.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="277">
+          <caret line="34" column="16" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main_including_cv.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="103" column="8" selection-start-line="103" selection-start-column="8" selection-end-line="103" selection-end-column="8" />
+        <state relative-caret-position="138">
+          <caret line="52" column="53" selection-start-line="52" selection-start-column="53" selection-end-line="52" selection-end-column="53" />
           <folding>
             <element signature="e#138#178#0" expanded="true" />
           </folding>

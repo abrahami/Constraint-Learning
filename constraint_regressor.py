@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 
 __author__ = 'abrahami'
 
-normalize_y = True
+normalize_y = False
 
 class ConstraintRegressor(object):
     """
@@ -709,3 +709,31 @@ class ConstraintRegressor(object):
                                             cur_eval_test['MSE'], cur_eval_test['CER'], cur_eval_test['R_square']]
             print "Results over the test data set current gamma are: " + str(cur_eval_test)
         return results_df
+
+    def active_sampling(self, X_train, y_train, sampling_portion, seed = 1984):
+        # case the % of sampling is higher/equal to 1 - we;ll reeturn the original dfs
+        if sampling_portion >= 1:
+            return X_train, y_train
+        else:
+            # calculating the # of instances to sample
+            sampling_unconstrained_amount = int(sampling_portion * sum([not i for i in self.is_constrainted]))
+            # the index of the chosen (only unconstrained) instances
+            chosen_unconstraint_idx = self.is_constrainted[self.is_constrainted==False].\
+                sample(sampling_unconstrained_amount, random_state=seed).index
+            # calculating an array of booleans to hold whether the instance was chosen or not in the samples (as unconstrained only)
+            was_chosen_as_unconstraint = self.is_constrainted.copy()
+            for i, value in was_chosen_as_unconstraint.iteritems():
+                if i in chosen_unconstraint_idx:
+                    was_chosen_as_unconstraint[i] = True
+                else:
+                    was_chosen_as_unconstraint[i] = False
+
+            # final chosen indices are ones which were chosen as part of the sampling OR were originally constrained
+            chosen_idx = pd.Series([a or b for a, b in zip(was_chosen_as_unconstraint, self.is_constrainted)])
+            X_train_sampled = X_train[chosen_idx].copy()
+            y_train_sampled = y_train[chosen_idx].copy()
+
+            # updating the self parameters
+            self.is_constrainted = self.is_constrainted[chosen_idx]
+            self.constraints_df_train = self.constraints_df_train[chosen_idx]
+            return X_train_sampled, y_train_sampled

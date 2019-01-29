@@ -30,15 +30,15 @@ save_plots = literal_eval(setup_details["saving_options"]["save_plots"])
 run_benchmarks = literal_eval(setup_details["benchmarks"]["run_benchmarks"])
 constant_weight_values = literal_eval(setup_details["benchmarks"]["constant_weight_values"])
 
-normalize_y = False
+run_active_sampling = False
 if run_benchmarks:
-    run_option_a = True
-    run_option_b = True
+    run_option_a = False
+    run_option_b = False
     run_option_c = False
 else:
-    run_option_a = run_option_b = run_option_c = False
+    run_option_a = run_option_b = run_option_c = True
 run_option_d = False
-run_option_e = False
+run_option_e = True
 
 # Loop over all configurations in the config file (.csv)
 for j in range(config_df.shape[0]):
@@ -47,6 +47,7 @@ for j in range(config_df.shape[0]):
     print "Current configurations are as follow: \n" + str(cur_config)
 
     for cur_fold in range(cv_folds_amount):
+    #for cur_fold in range(0, 1):
         print "\nStarting cv loop #{}, out of {}\n".format(cur_fold, cv_folds_amount)
         constraint_reg_obj = ConstraintRegressor(cv_params={'percentile_threshold': cur_config['percentile_threshold'],
                                                             'constraint_interval_size': cur_config['constraint_interval_size']},
@@ -117,45 +118,56 @@ for j in range(config_df.shape[0]):
         # Option A - not taking into consideration the restrictions at all
         if run_option_a:
             start_time = datetime.now()
-            clf.fit(X_train, y_train, weights_based_constraints_sol=False)
-            duration = (datetime.now() - start_time).seconds
-            print "Option A - not taking constraints into consideration at all:"
-            cur_train_eval = ConstraintRegressor.regression_eval(y_true=y_train, y_predicted=clf.predict(X_train),
-                                                                 constraints_df=constraint_reg_obj.constraints_df_train)
-            print "TRAIN dataset:" + str(cur_train_eval)
+            if run_active_sampling:
+                active_sampling_bins = [i/10.0 for i in range(0, 11, 1)]
+            else:
+                active_sampling_bins = [1.0]
+            original_constraint_reg_obj = copy.copy(constraint_reg_obj)
+            for cur_sampling_bin in active_sampling_bins:
+                constraint_reg_obj = copy.copy(original_constraint_reg_obj)
+                X_train_sampled, y_train_sampled = constraint_reg_obj.active_sampling(X_train=X_train, y_train=y_train,
+                                                                                      sampling_portion=cur_sampling_bin)
+                clf.fit(X_train_sampled, y_train_sampled)
+                duration = (datetime.now() - start_time).seconds
+                print "Option A - not taking constraints into consideration " \
+                      "at all (active sampling ratio = {}):".format(cur_sampling_bin)
+                cur_train_eval = ConstraintRegressor.regression_eval(y_true=y_train_sampled, y_predicted=clf.predict(X_train_sampled),
+                                                                     constraints_df=constraint_reg_obj.constraints_df_train)
+                print "TRAIN dataset:" + str(cur_train_eval)
 
-            # handling the test data
-            cur_prediction = clf.predict(X_test)
-            cur_test_eval = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
-                                                                constraints_df=constraints_df_test)
-            print "TEST dataset:" + str(cur_test_eval)
+                # handling the test data
+                cur_prediction = clf.predict(X_test)
+                cur_test_eval = ConstraintRegressor.regression_eval(y_true=y_test, y_predicted=cur_prediction,
+                                                                    constraints_df=constraints_df_test)
+                print "TEST dataset:" + str(cur_test_eval)
 
-            # case we want to save evaluation results to a file
-            if save_evaluation_measures:
-                cur_train_full_log = copy.copy(config_details)
-                cur_train_full_log.extend((cur_fold, "Option A - no constraints", "train",
-                                           duration, cur_train_eval['n_constraints'], cur_train_eval['CMSE'],
-                                           cur_train_eval['MSE'], cur_train_eval['CER'], cur_train_eval["R_square"]))
-                writer.writerow(cur_train_full_log)
+                # case we want to save evaluation results to a file
+                if save_evaluation_measures:
+                    cur_train_full_log = copy.copy(config_details)
+                    cur_train_full_log.extend((cur_fold, "Option A - no constraints", "train",
+                                               duration, cur_train_eval['n_constraints'], cur_train_eval['CMSE'],
+                                               cur_train_eval['MSE'], cur_train_eval['CER'], cur_train_eval["R_square"]))
+                    writer.writerow(cur_train_full_log)
 
-                cur_test_full_log = copy.copy(config_details)
-                cur_test_full_log.extend((cur_fold, "Option A - no constraints", "test",
-                                          duration, cur_test_eval['n_constraints'], cur_test_eval['CMSE'],
-                                          cur_test_eval['MSE'], cur_test_eval['CER'], cur_train_eval["R_square"]))
-                writer.writerow(cur_test_full_log)
-            # case we want to save prediction of each observation
-            if save_row_level_predictions:
-                row_level_df_resuls["standard_gbt"] = list(clf.predict(X_train)) + list(cur_prediction)
-            # case we want to save plots of the algorithm - there are 2 plots we are creating to each method (a to e)
-            if save_plots:
-                ConstraintRegressor.scatter_plot(x=y_test, y=cur_prediction, x_name='True Value', y_name='Predicted Value',
-                                                 constraints_df=constraints_df_test,
-                                                 saving_path=results_loc + "\\option_a_config_no_"
-                                                             + str(cur_config['index'])+".jpg")
-                ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
-                                                   prediction=cur_prediction,
-                                                   saving_path=results_loc + "\\histogram_option_a_config_no_"
-                                                               + str(cur_config['index'])+".jpg")
+                    cur_test_full_log = copy.copy(config_details)
+                    cur_test_full_log.extend((cur_fold, "Option A - no constraints", "test",
+                                              duration, cur_test_eval['n_constraints'], cur_test_eval['CMSE'],
+                                              cur_test_eval['MSE'], cur_test_eval['CER'], cur_train_eval["R_square"]))
+                    writer.writerow(cur_test_full_log)
+                # case we want to save prediction of each observation
+                if save_row_level_predictions:
+                    row_level_df_resuls["standard_gbt"] = list(clf.predict(X_train)) + list(cur_prediction)
+                # case we want to save plots of the algorithm - there are 2 plots we are creating to each method (a to e)
+                if save_plots:
+                    ConstraintRegressor.scatter_plot(x=y_test, y=cur_prediction, x_name='True Value', y_name='Predicted Value',
+                                                     constraints_df=constraints_df_test,
+                                                     saving_path=results_loc + "\\option_a_config_no_"
+                                                                 + str(cur_config['index'])+".jpg")
+                    ConstraintRegressor.histogram_plot(constraints_df=constraints_df_test,
+                                                       prediction=cur_prediction,
+                                                       saving_path=results_loc + "\\histogram_option_a_config_no_"
+                                                                   + str(cur_config['index'])+".jpg")
+
 
         # Option B - taking the restrictions in a  general attitude - giving global weights to the constrained instances
         if run_option_b:
